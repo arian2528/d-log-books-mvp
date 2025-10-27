@@ -1,0 +1,70 @@
+// prisma/schema.prisma
+
+// This block is for the Prisma Client and tells it where to generate the type-safe client library.
+generator client {
+provider = "prisma-client-js"
+// Preview feature to enable MongoDB support if you later decide to use it for unstructured data.
+// Not strictly needed for PostgreSQL, but useful practice.
+// binaryTargets = ["native"]
+}
+
+// This block defines the connection details for your PostgreSQL database.
+// The connection string is pulled from an environment variable (DATABASE_URL).
+datasource db {
+provider = "postgresql"
+url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------
+// 1. Core Models for MVP RBAC and Data Structure
+// ------------------------------------------------------------------
+
+// The Role model is crucial for RBAC. It defines the allowed user roles.
+// We are modeling this as a separate table for flexibility (easier to add permissions later).
+model Role {
+id    Int     @id @default(autoincrement())
+// Enforcing uniqueness on the role name (e.g., "Admin", "Standard User")
+name  String  @unique
+
+// Relationship: One Role can be assigned to many Users
+users User[]
+}
+
+// The User model is linked to the Hono proxy's authentication.
+// It stores the user's details and their assigned role.
+model User {
+// Use CUID (Collision-resistant ID) for IDs, which is standard practice in Prisma/Node.js apps.
+id            String    @id @default(cuid())
+
+// This email comes from the Social Provider (GitHub/Google) and must be unique.
+email         String    @unique
+name          String?   // Optional field for the user's name
+
+createdAt     DateTime  @default(now())
+updatedAt     DateTime  @updatedAt
+
+// Foreign Key: Link to the Role model
+roleId        Int
+role          Role      @relation(fields: [roleId], references: [id])
+
+// Relationship: One User can own many Core Entities (Crucial for Standard User RBAC)
+ownedEntities CoreEntity[]
+}
+
+// CoreEntity represents the main data object of the application (e.g., Project, Task, Record).
+// It has a foreign key relationship back to the User who created it.
+model CoreEntity {
+id            String    @id @default(cuid())
+title         String
+content       String? // Optional content field
+
+createdAt     DateTime  @default(now())
+updatedAt     DateTime  @updatedAt
+
+// Foreign Key: Identifier of the User who owns this entity.
+// This is the field used in NestJS for the "Standard User" permission check.
+ownerId       String
+
+// Relationship: The owner User linked via the ownerId foreign key.
+owner         User      @relation(fields: [ownerId], references: [id])
+}
