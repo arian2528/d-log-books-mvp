@@ -170,8 +170,6 @@ Attempting to access a non-selected field, like 'entities[0].createdAt',
 will result in a compile-time error, ensuring data shape consistency.
 */
 
-
-
 G. Database Migration Strategy (Prisma)
 
 Migrations are a critical part of the Continuous Deployment (CD) pipeline. We must ensure the database schema is updated before the application starts using the new schema to prevent runtime errors.
@@ -185,6 +183,41 @@ CI/CD Deployment (prisma migrate deploy): This command is mandatory in the pre-l
 
 # This must run before the new application container starts
 npx prisma migrate deploy
+
+
+H. Dockerization Strategy
+
+To ensure consistency between development and production environments, all services will be containerized using Docker.
+
+1.  **Local Development (Docker Compose)**:
+    *   A `docker-compose.yml` file at the root of the monorepo will define the services for the entire stack (Next.js, NestJS, Hono, PostgreSQL, Redis).
+    *   Developers will be able to spin up the entire development environment with a single command: `docker-compose up`.
+    *   This approach isolates dependencies and eliminates the "it works on my machine" problem.
+    *   Volumes will be used to mount local source code into the containers, enabling hot-reloading for a seamless development experience.
+
+2.  **Production Deployment (Dockerfiles)**:
+    *   Each application in the `apps/` directory will have its own multi-stage `Dockerfile`.
+    *   These Dockerfiles will be optimized for production, creating small, secure, and efficient images.
+    *   The CI/CD pipeline will use these Dockerfiles to build and push images to a container registry (e.g., Docker Hub, Google Container Registry).
+    *   The deployment process will then pull these images to run in the production environment.
+
+
+I. Circuit Breaker for 3rd Party Dependencies
+
+To enhance resilience and prevent cascading failures caused by slow or failing third-party services, all external API calls (e.g., to payment gateways, email services, or other external APIs) must be wrapped in a circuit breaker.
+
+-   **Pattern**: The circuit breaker will monitor calls to an external service. If the failure rate exceeds a configured threshold, the circuit will "open," and all subsequent calls will fail immediately without attempting to contact the service. This allows the external service time to recover.
+-   **Implementation**: Use a library like **opossum** in the NestJS and Hono services.
+-   **Fallback**: Implement sensible fallback mechanisms. For example, if a third-party data enrichment service is down, the system should gracefully continue without the enriched data rather than failing the entire request.
+
+
+J. App Notifications (OneSignal)
+
+For the MVP, all push notifications and in-app messaging will be handled by **OneSignal**. This allows for rapid implementation of a robust notification system.
+
+-   **Implementation**: The NestJS monolith will be responsible for triggering transactional notifications (e.g., when a new entity is created or a user is mentioned). The Golang microservice can be used for high-volume or scheduled notifications.
+-   **Frontend Integration**: The Next.js frontend will integrate the OneSignal SDK to handle the display of in-app messages and prompt users for push notification permissions.
+-   **Channels**: The initial focus will be on Web Push (for desktop/mobile browsers) and In-App Messaging.
 
 
 6. Observability & Testing Strategy
@@ -206,6 +239,18 @@ correlationId: Must be the value passed via the X-Correlation-ID header to link 
 Contextual Data: Include userId, API path, and latency/duration for performance monitoring.
 
 Centralization: Configure services to write logs to stdout/stderr so they can be easily collected by the chosen cloud platform's logging service.
+
+D. Performance Monitoring & Slack Integration
+
+To provide real-time visibility into application health and performance, we will integrate a monitoring platform to send automated alerts to a dedicated Slack channel (e.g., `#system-alerts`).
+
+-   **Tooling**: For the MVP, a managed service like **Datadog** or **Better Stack** is recommended for its ease of setup and powerful features. These services can directly ingest the structured JSON logs from our applications.
+-   **Alerting Rules**: We will configure alerts for critical events, such as:
+    -   Breaches of the 5-second SLA.
+    -   Sudden increases in error rates.
+    -   Unusual traffic patterns.
+    -   High CPU or memory usage in containers.
+-   **Alternative (Self-Hosted)**: A powerful open-source alternative is the **Prometheus**, **Grafana**, and **Alertmanager** stack. This would involve exposing a `/metrics` endpoint on our backend services and configuring Alertmanager to push notifications to Slack.
 
 B. CI/CD Pipeline (GitHub Actions)
 
@@ -354,3 +399,35 @@ Responsiveness: Full mobile/tablet/desktop responsiveness, including a collapsib
 Theme: Supporting Light/Dark mode with localStorage persistence.
 
 Structure: Following the specified component organization (shared/, dashboard/, lib/, etc.).
+
+10. Monorepo Strategy & Key Development Features
+
+To streamline development and enhance collaboration, this project will adopt a monorepo architecture. All services (Next.js, NestJS, Hono, Golang) will reside in a single repository.
+
+A. Monorepo Tooling
+
+We will use **pnpm workspaces** as the primary tool for managing the monorepo. This choice is favored for its efficiency in handling node_modules and linking local packages. **Turborepo** will be layered on top to provide intelligent build caching, task orchestration, and simplified pipeline management.
+
+B. Directory Structure
+
+The monorepo will be organized as follows:
+
+-   `apps/`: Contains the individual applications (e.g., `nextjs-frontend`, `nestjs-monolith`, `hono-proxy`).
+-   `packages/`: Contains shared code and configurations accessible across the monorepo.
+
+C. Key Development Features & Benefits
+
+-   **Shared Code & Configuration**:
+    -   `packages/ui`: Shared React components for the Next.js frontend.
+    -   `packages/eslint-config-custom`: A single, shareable ESLint configuration.
+    -   `packages/tsconfig`: Centralized TypeScript configurations to ensure consistency.
+    -   `packages/zod-schemas`: Shared Zod schemas for validation between the frontend and backend, ensuring data consistency.
+
+-   **Atomic Commits & Cross-Project Changes**:
+    -   A single pull request can contain changes to both the frontend and backend, making it easier to coordinate features and bug fixes.
+
+-   **Simplified Dependency Management**:
+    -   Dependencies are managed from a single root `package.json`, reducing conflicts and ensuring version consistency.
+
+-   **Efficient CI/CD**:
+    -   Turborepo's caching and dependency graph analysis will significantly speed up build and test times in the CI/CD pipeline. Only the affected apps and packages will be rebuilt and tested.
