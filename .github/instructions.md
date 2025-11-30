@@ -70,7 +70,7 @@ High-performance, isolated service (e.g., heavy processing, reporting, or notifi
 
 Database
 
-SQL (PostgreSQL) + Prisma ORM
+SQL (PostgreSQL) + TypeORM
 
 Primary source of truth for structured data (Users, Roles, Core Entities).
 
@@ -110,7 +110,7 @@ X-Correlation-ID: (Generated here and passed down for distributed tracing/loggin
 
 Rate Limiting: Implement basic rate limiting at the Hono layer to protect the backend services from abuse.
 
-Input Validation (Mandatory): All endpoints must use Zod on the server side to rigorously validate and sanitize incoming data from the request body. Prisma's Client will handle type validation for all outgoing database queries, ensuring the data written to or read from PostgreSQL matches the defined schema.
+Input Validation (Mandatory): All endpoints must use Zod on the server side to rigorously validate and sanitize incoming data from the request body. TypeORM entities and repositories will handle type validation for all outgoing database queries, ensuring the data written to or read from PostgreSQL matches the defined schema.
 
 Clear Error Handling: API responses must use standardized HTTP status codes (e.g., 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found) with simple, machine-readable error messages in the body.
 
@@ -140,52 +140,85 @@ Parallel I/O: Use Promise.all in all backend services (NestJS/Golang) and Next.j
 
 Multithreading: For any CPU-intensive tasks, use Node.js Worker Threads in Next.js/NestJS to avoid blocking the main event loop.
 
-F. Type Safety & Data Modeling (Prisma Focus)
+F. Type Safety & Data Modeling (TypeORM Focus)
 
-To ensure maximum type safety and align with the TypeScript-first approach, we are standardizing on Prisma ORM for all PostgreSQL interactions. Prisma follows a schema-first approach, generating a client that is fully aware of your database structure. This provides superior compile-time checks over traditional ORMs.
+To ensure type safety and a flexible data access layer, we are standardizing on TypeORM for all PostgreSQL interactions. TypeORM supports both the Data Mapper and Active Record patterns. For this project, we will use the Data Mapper pattern to decouple business logic from database persistence.
 
-Example of Type-Safe Development:
+Example of Type-Safe Development with Data Mapper:
 
-Prisma's client is aware of the exact fields returned by a query. If we query a CoreEntity and only select the id and title, the resulting object will be automatically typed to contain only those two fields.
+Entities are clean classes that represent your data structure. Repositories are used to interact with the database.
 
-// Assume the prisma client is injected and available as 'prisma'
-const userRole = 'Standard User'; 
-const userId = 'user-123';
+// user.entity.ts
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-const entities = await prisma.coreEntity.findMany({
-  where: { 
-    // RBAC enforced: Standard users only see their own records
-    ownerId: userRole === 'Standard User' ? userId : undefined,
-  },
-  select: {
-    id: true,
-    title: true,
+  @Column()
+  name: string;
+}
+
+// user.repository.ts - Custom repository example
+@EntityRepository(User)
+export class UserRepository extends Repository<User> {
+  findByName(name: string) {
+    return this.findOne({ name });
   }
-});
+}
 
-/* TypeScript automatically recognizes the structure of 'entities' as:
-Array<{ id: string, title: string }>
-
-Attempting to access a non-selected field, like 'entities[0].createdAt', 
-will result in a compile-time error, ensuring data shape consistency.
-*/
-
-G. Database Migration Strategy (Prisma)
-
-Migrations are a critical part of the Continuous Deployment (CD) pipeline. We must ensure the database schema is updated before the application starts using the new schema to prevent runtime errors.
-
-Local Development (prisma migrate dev): Use this command locally to create new migration files, execute them against your development database, and update the generated Prisma Client. These migration files (in prisma/migrations) must be committed to Git.
-
-npx prisma migrate dev --name your_migration_name
+// usage in a service
+const userRepository = connection.getCustomRepository(UserRepository);
+const user = await userRepository.findByName("John Doe");
 
 
-CI/CD Deployment (prisma migrate deploy): This command is mandatory in the pre-launch hook of the deployment pipeline. It runs all pending, non-applied migration files against the target environment (Staging/Production). This ensures the application version is compatible with the database schema.
+G. Database Migration Strategy (TypeORM)
 
-# This must run before the new application container starts
-npx prisma migrate deploy
+Migrations are critical for evolving the database schema in a controlled and versioned way.
 
+Local Development:
+Generate a new migration file based on changes in your entities.
+`npx typeorm migration:generate -n YourMigrationName`
 
-H. Dockerization Strategy
+Run migrations to update your local database schema.
+`npx typeorm migration:run`
+
+CI/CD Deployment:
+In a production environment, you should only run migrations. Generating migrations should be part of the development process. The CI/CD pipeline will run the migrations against the target database before the new application version is deployed.
+`npx typeorm migration:run`
+
+H. Row-Level Security (RLS) for Multi-Tenancy
+
+To ensure strict data isolation between users (tenants), we will leverage PostgreSQL's native Row-Level Security (RLS). This is a robust way to enforce that users can only access their own data.
+
+1. Enable RLS on the Table:
+For each table that contains user-specific data, we need to enable RLS.
+`ALTER TABLE core_entity ENABLE ROW LEVEL SECURITY;`
+
+2. Create a Security Policy:
+A policy is a rule that PostgreSQL applies to every query on the table. We will create a policy that checks the user's ID against a `userId` column in the table.
+
+`CREATE POLICY user_isolation_policy ON core_entity
+FOR ALL
+USING (user_id = current_setting('app.current_user_id'));`
+
+3. Set the User Context in the Application:
+For every incoming request, we must tell PostgreSQL who the current user is. This is done by setting a session variable (`app.current_user_id`) at the beginning of each request. In our NestJS application, this can be done in a middleware.
+
+// RLS middleware in NestJS
+@Injectable()
+export class RlsMiddleware implements NestMiddleware {
+  constructor(private readonly connection: Connection) {}
+
+  async use(req: Request, res: Response, next: NextFunction) {
+    const userId = req.user?.id; // Assuming user is on the request
+    if (userId) {
+      await this.connection.query(`SET app.current_user_id = '${userId}'`);
+    }
+    next();
+  }
+}
+
+With this setup, any query to `core_entity` from your application (using TypeORM) will automatically be filtered by PostgreSQL, so a user can only see and manipulate their own rows. This is a powerful and secure way to implement multi-tenancy.
 
 To ensure consistency between development and production environments, all services will be containerized using Docker.
 
@@ -324,7 +357,7 @@ Purpose: Test how multiple modules or components work together, including intera
 
 What to Test: API endpoints with real or in-memory database (entity creation, updates), Authentication and authorization flows (role-based access, protected routes), and Database migrations.
 
-Recommended Tools: Jest or Vitest for running tests; Supertest for HTTP API testing; Prisma Test Utilities for database interactions.
+Recommended Tools: Jest or Vitest for running tests; Supertest for HTTP API testing.
 
 Best Practices: Use a separate test database or in-memory database, reset database state between tests for isolation, and test both success and failure scenarios (e.g., unauthorized access, invalid data).
 
