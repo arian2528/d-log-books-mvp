@@ -4,9 +4,7 @@ SaaS MVP Development Instructions (instructions.md)
 
 Goal: To launch a Minimum Viable Product (MVP) for a role-based SaaS application designed to
 
-$$**Placeholder: Describe the Core Business Value/Action Here**$$
-
-.
+[Core Business Value](./core-business-value.md)
 
 MVP Definition (Key Differentiator): The MVP must enable users to perform the core value proposition and demonstrate the robust, role-based access control system.
 
@@ -18,23 +16,24 @@ A. User Management & Authentication
 
 Social Sign-In: Users will authenticate exclusively through a supported Social Provider (e.g., GitHub, Google) managed by the Hono proxy. No email/password flow.
 
-Role Assignment: Initial users are assigned one of two roles: Admin or Standard User.
+Role Assignment: Initial users are assigned one of the following roles: Admin,Pilot, Mechanic (A&P), Operator, Owner, or Inspector (IA).
 
-User Profile: Simple view/edit of name and email.
+User Profile: Simple view/edit of name email and role.
 
 B. Core Data Functionality (The "Do" Feature)
 
-Create/Read Entity: Users can create and view Entity records (e.g., Projects, Tasks, or Records).
+Log Entry Creation: Users can create log entries in the relevant logbooks (Operator, Airframe, Engine, etc.).
 
-Role-Based Access Control (RBAC) Logic:
+Role-Based Access Control (RBAC) & Signing:
 
-Standard User: Can only read/write their own Entity records.
-
-Admin: Can read/write/delete any Entity record.
+*   **Pilot**: Can create and sign their own flight logs in the Pilot Log. This action triggers the cascading update.
+*   **Operator**: Can manage operational data in the Operator Log, such as crew assignments and dispatch records.
+*   **Mechanic (A&P)**: Can create and sign off on maintenance entries in the Airframe, Engine, Avionics and Propeller logs.
+*   **Inspector (IA)**: Can perform and sign off on annual inspections and major repairs, making those records immutable.
 
 C. Basic Dashboard
 
-A landing page that displays a list of accessible Entity records based on the user's assigned role.
+A landing page that displays a summary of the aircraft's status, including total times and upcoming maintenance items.
 
 3. Technical Stack & Architecture
 
@@ -81,6 +80,8 @@ NoSQL (MongoDB/Redis)
 Flexible storage for user logs, feature flags, or caching.
 
 4. Authentication Strategy (Hono Integration)
+
+The authentication proxy is designed as a standalone, swappable component. This architectural choice allows for flexibility, enabling a quick pivot to a different authentication technology in the future (e.g., migrating from Hono to a custom solution or another third-party service) with minimal impact on the core application.
 
 The Hono proxy will manage the entire social sign-in flow and act as the single point of entry for authorization checks.
 
@@ -142,33 +143,7 @@ Multithreading: For any CPU-intensive tasks, use Node.js Worker Threads in Next.
 
 F. Type Safety & Data Modeling (TypeORM Focus)
 
-To ensure type safety and a flexible data access layer, we are standardizing on TypeORM for all PostgreSQL interactions. TypeORM supports both the Data Mapper and Active Record patterns. For this project, we will use the Data Mapper pattern to decouple business logic from database persistence.
-
-Example of Type-Safe Development with Data Mapper:
-
-Entities are clean classes that represent your data structure. Repositories are used to interact with the database.
-
-// user.entity.ts
-@Entity()
-export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
-  name: string;
-}
-
-// user.repository.ts - Custom repository example
-@EntityRepository(User)
-export class UserRepository extends Repository<User> {
-  findByName(name: string) {
-    return this.findOne({ name });
-  }
-}
-
-// usage in a service
-const userRepository = connection.getCustomRepository(UserRepository);
-const user = await userRepository.findByName("John Doe");
+The complete database schema, including all tables, columns, and relationships, is defined in the [Database Schema Instructions](./database-schema.md) document. This document serves as the single source of truth for data modeling. All TypeORM entities must be implemented according to this specification.
 
 
 G. Database Migration Strategy (TypeORM)
@@ -389,7 +364,7 @@ Frontend Shell: Set up the basic Next.js project structure, layout, and protecte
 
 Phase 2: Core Business Logic (1-2 Weeks Target)
 
-SQL Schema: Define the PostgreSQL schema for Users, Roles, and Core Entities using Prisma Schema Language (PSL).
+SQL Schema: Define the PostgreSQL schema for all entities as specified in the [Database Schema Instructions](./database-schema.md).
 
 NestJS CRUD: Implement the CoreEntity service in NestJS, including the business logic to enforce RBAC (i.e., filtering results based on the user's role/ID extracted from the headers). Implement Zod validation on all POST/PUT/PATCH endpoints.
 
