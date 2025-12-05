@@ -219,13 +219,13 @@ To enhance resilience and prevent cascading failures caused by slow or failing t
 -   **Fallback**: Implement sensible fallback mechanisms. For example, if a third-party data enrichment service is down, the system should gracefully continue without the enriched data rather than failing the entire request.
 
 
-J. App Notifications (OneSignal)
+J. App Notifications (Agnostic Service)
 
-For the MVP, all push notifications and in-app messaging will be handled by **OneSignal**. This allows for rapid implementation of a robust notification system.
+The application uses a provider-agnostic notification strategy to ensure flexibility and avoid vendor lock-in. The detailed approach, which involves an abstracted notification microservice, is described in the [Agnostic Notification Service Strategy](./notification-strategy.md) document.
 
--   **Implementation**: The NestJS monolith will be responsible for triggering transactional notifications (e.g., when a new entity is created or a user is mentioned). The Golang microservice can be used for high-volume or scheduled notifications.
--   **Frontend Integration**: The Next.js frontend will integrate the OneSignal SDK to handle the display of in-app messages and prompt users for push notification permissions.
--   **Channels**: The initial focus will be on Web Push (for desktop/mobile browsers) and In-App Messaging.
+-   **Initial Provider**: For the MVP, **OneSignal** will be the default provider for its rapid setup.
+-   **Implementation**: A dedicated microservice (e.g., in Golang) will abstract the notification logic. The NestJS monolith will communicate with this service to trigger notifications, remaining decoupled from the specific provider implementation.
+-   **Frontend Integration**: The Next.js frontend will integrate the necessary SDK (e.g., OneSignal's) to display notifications. The architecture ensures this can be swapped out with minimal effort.
 
 
 6. Observability & Testing Strategy
