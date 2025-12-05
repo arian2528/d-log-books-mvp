@@ -458,3 +458,36 @@ To improve global performance and reduce load on the Next.js server, a Content D
     -   **Reduced Latency**: Users will download assets from edge locations closer to them, resulting in faster page loads.
     -   **Improved Scalability**: Offloads traffic from the application server, allowing it to focus on handling dynamic requests.
     -   **Enhanced Reliability**: Provides an additional layer of redundancy.
+
+### B. API Versioning Strategy
+
+As the application evolves and new features are added, maintaining backward compatibility for client applications (especially mobile or third-party integrations) becomes critical. A robust API versioning strategy will be implemented post-MVP to manage changes gracefully.
+
+-   **Strategy**: **URL-based versioning** will be the chosen method. This is a clear and explicit approach where the version is included in the URL path.
+    -   Example: `https://api.yourapp.com/v1/aircrafts`
+    -   Example: `https://api.yourapp.com/v2/aircrafts`
+
+-   **Implementation in NestJS**:
+    -   NestJS provides built-in support for API versioning. We can enable it in the `main.ts` file and apply version numbers to controllers or individual routes.
+    ```typescript
+    // in main.ts
+    app.enableVersioning({
+      type: VersioningType.URI,
+      defaultVersion: '1',
+    });
+
+    // in a controller
+    @Controller({
+      version: '2',
+      path: 'aircrafts',
+    })
+    ```
+    -   This allows different versions of a controller to coexist within the same application, simplifying the management of breaking changes.
+
+-   **Gateway Routing**:
+    -   The Hono API Gateway can be configured to route requests based on the version prefix in the URL to different backend services if, in the future, a new version of the API is built as a separate microservice.
+
+-   **Best Practices**:
+    -   **No Breaking Changes in Existing Versions**: Once an API version (e.g., `v1`) is public, it should not receive breaking changes. Bug fixes and non-breaking additions are acceptable.
+    -   **Deprecation Policy**: When a new API version is released (e.g., `v2`), the old version (`v1`) should be marked as deprecated. A clear timeline for its eventual retirement should be communicated to all clients.
+    -   **Clear Documentation**: Each version of the API must have its own clear and comprehensive documentation.
