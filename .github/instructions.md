@@ -378,6 +378,10 @@ Caching Implementation: Integrate Redis into the NestJS monolith. Implement cach
 
 Testing & CD: Implement all Unit, Integration, and Contract Tests in the CI pipeline. Finalize the CD process for automated deployment, including tests for Rate Limiting and Idempotency.
 
+Phase 4: Monetization & Billing (Post-MVP)
+
+Billing Microservice: Develop and deploy the dedicated, event-driven Billing Microservice as detailed in the [Agnostic Monetization & Billing Service](./monetization-strategy.md) document. Integrate the initial payment provider (e.g., Stripe).
+
 8. Key Deliverables for MVP Launch
 
 Fully functional Social Sign-In using the Hono proxy.
@@ -509,3 +513,9 @@ To ensure the API is well-documented and easy for developers (both internal and 
     -   **Always Up-to-Date**: The documentation is generated from the code, so it's always in sync with the API's actual implementation.
     -   **Interactive**: Developers can make live API calls directly from the documentation UI, which is excellent for testing and exploration.
     -   **Client SDK Generation**: The OpenAPI spec can be used to automatically generate client SDKs for various languages (e.g., TypeScript, Java).
+
+## 12. Monetization Strategy
+
+The application will be monetized based on user roles and access to features. The specific terms of use, pricing tiers, and subscription details will be defined at a later stage.
+
+For the detailed technical implementation of the billing system, please refer to the [Agnostic Monetization & Billing Service](./monetization-strategy.md) document.
