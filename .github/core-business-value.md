@@ -35,3 +35,23 @@ Our value proposition is defined by a unique architecture designed for accuracy,
 ## 3. Target Audience
 
 This application is designed for **aircraft owners, operators, pilots, and certified maintenance professionals (A&P, IA)** who require a reliable, compliant, and efficient system to manage the complex web of aviation records.
+
+## The Central `Aircraft` Entity
+
+The `Aircraft` entity is the core of the entire system. It acts as the central hub to which all other major data models are connected, representing a specific, physical aircraft. Its relationships define who can operate it, who owns it, what parts it's made of, and what regulations apply to it.
+
+### Key Relationships (Many-to-Many)
+
+The `Aircraft` entity maintains many-to-many relationships with several other key entities, allowing for a flexible and scalable data structure:
+
+-   **`Aircraft` <> `Aircraft Parts`**: An aircraft is composed of many parts, and a single part type (e.g., a specific model of tire) can be used on many different aircraft. This relationship tracks the specific components installed on an aircraft.
+
+-   **`Aircraft` <> `Operators`**: An aircraft can be managed by multiple operators over its lifetime (or even concurrently in some arrangements), and an operator can manage a fleet of multiple aircraft.
+
+-   **`Aircraft` <> `Pilots`**: A pilot is authorized to fly multiple aircraft, and a single aircraft can be flown by many different pilots.
+
+-   **`Aircraft` <> `Owners`**: An aircraft can have multiple co-owners, and an individual or entity can own multiple aircraft.
+
+-   **`Aircraft` <> `Directives/Bulletins`**: A single airworthiness directive or service bulletin can apply to many aircraft, and a single aircraft may be subject to numerous directives and bulletins.
+
+-   **`Aircraft` <> `STC/Alterations`**: A Supplemental Type Certificate (STC) or alteration can be applied to many aircraft, and one aircraft can have multiple STCs or alterations applied to it.
