@@ -77,21 +77,15 @@ Database
 
 NoSQL (MongoDB/Redis)
 
-Flexible storage for user logs, feature flags, or caching.
+Session Store for Hono Auth Proxy; Caching layer for backend services.
 
 4. Authentication Strategy (Hono Integration)
 
-The authentication proxy is designed as a standalone, swappable component. This architectural choice allows for flexibility, enabling a quick pivot to a different authentication technology in the future (e.g., migrating from Hono to a custom solution or another third-party service) with minimal impact on the core application. For a detailed guide on the hybrid cookie/JWT approach, please see the [Hybrid Authentication Strategy](./authentication-strategy.md) document.
+The project uses a **hybrid authentication model** where the Hono proxy serves as the dedicated authentication server. This approach combines the security of stateful session cookies for the browser with the scalability of stateless JWTs for backend services.
 
-The Hono proxy will manage the entire social sign-in flow and act as the single point of entry for authorization checks.
+This architecture is designed to be flexible and swappable, minimizing impact on the core application if the authentication technology changes in the future.
 
-Frontend (Next.js): Initiates the social sign-in flow (e.g., redirect to Google/GitHub) handled by the Hono proxy.
-
-Hono Proxy: Completes the OAuth flow with the external provider. Upon successful authentication, it mints a JWT/session token containing the user's userId and role.
-
-Hono Proxy: For all subsequent requests to the NestJS/Golang backend, the proxy validates the token and attaches the user context to the request header.
-
-Backend (NestJS/Golang): The backend services trust the Hono proxy. They read the user context (userId, role) directly from the request headers inserted by the proxy and use the role to enforce business-level authorization checks.
+For a complete technical breakdown, including diagrams and implementation steps, refer to the single source of truth: **[Hybrid Authentication Strategy](./authentication-strategy.md)**.
 
 5. Development Environment & Deployment Strategy
 
@@ -101,13 +95,11 @@ The Hono proxy serves as the API Gateway and must implement security and observa
 
 CORS Enforcement: Strictly configure CORS middleware to allow requests only from the Next.js frontend origin.
 
-Request Context Injection: Inject the validated user data into standardized headers before forwarding to the backend:
+Request Context Injection: After validating the user's session cookie, the proxy mints a short-lived JWT and injects it into the downstream request's `Authorization` header.
 
-X-User-ID: (Required for all services to identify the current user).
+`Authorization: Bearer <token>`: (Required for all backend services to authenticate the request).
 
-X-User-Role: (Required for all services to enforce RBAC).
-
-X-Correlation-ID: (Generated here and passed down for distributed tracing/logging).
+`X-Correlation-ID`: (Generated here and passed down for distributed tracing/logging).
 
 Rate Limiting: Implement basic rate limiting at the Hono layer to protect the backend services from abuse.
 
@@ -370,7 +362,7 @@ Phase 2: Core Business Logic (1-2 Weeks Target)
 -   **SQL Schema**: Define the PostgreSQL schema for all entities as specified in the [Database Schema Instructions](./database-schema.md).
 -   **NestJS CRUD**: Implement the CoreEntity service in NestJS, including the business logic to enforce RBAC (i.e., filtering results based on the user's role/ID extracted from the headers). Implement Zod validation on all POST/PUT/PATCH endpoints.
 -   **Frontend MVP**: Build the Dashboard and the form/list views necessary. Ensure Optimistic UI updates are used for key user actions.
-
+-   **NestJS CRUD**: Implement the CoreEntity service in NestJS. This includes the business logic to enforce RBAC by validating the incoming JWT and using its contents (e.g., `userId`, `role`) to control data access. Implement Zod validation on all POST/PUT/PATCH endpoints.
 Phase 3: Microservice Integration & Performance (1 Week Target)
 
 Golang Microservice: Develop the initial Golang microservice that receives requests from the NestJS monolith via HTTP/gRPC. Implement the Golang side of the Contract Test.
