@@ -354,13 +354,14 @@ Deployment Stage: On merge to main, GitHub Actions automatically pushes the cont
 
 7. Phased Implementation Plan
 
-Phase 1: Authentication Backbone (1 Week Target)
+Phase 1: Project Scaffolding & Authentication Backbone (1 Week Target)
 
-Auth Setup: Deploy Hono better-auth-proxy and configure the Social Sign-In Providers (e.g., GitHub, Google) to generate and validate tokens containing userId and role. Implement required gateway best practices (CORS, Header Injection, Rate Limiting).
+**Goal:** To establish the complete monorepo structure and implement the core hybrid authentication flow. For the granular, command-by-command setup for this phase, please refer to the official [MVP Build Instructions](./build-instructions.md).
 
-NestJS Integration: Create the initial NestJS monolith structure. Implement middleware/guard to read and extract the user context (userId, role, correlationId) from the proxy-inserted headers. Implement 5-second timeout logic for all outgoing calls.
-
-Frontend Shell: Set up the basic Next.js project structure, layout, and protected routing. Implement 5-second timeout and Skeleton loading on initial data fetch.
+-   **Monorepo Setup**: Initialize the pnpm workspace with Turborepo.
+-   **Application Scaffolding**: Create the initial Next.js, NestJS, and Hono applications.
+-   **Authentication Implementation**: Implement the stateful cookie-based auth between the frontend and proxy, and the stateless JWT-based auth between the proxy and the backend.
+-   **Dockerization**: Containerize all services for a consistent local development environment.
 
 Phase 2: Core Business Logic (1-2 Weeks Target)
 
