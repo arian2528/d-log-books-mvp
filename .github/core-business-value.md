@@ -32,11 +32,31 @@ Our value proposition is defined by a unique architecture designed for accuracy,
 
 **User Benefit**: A pilot can sign their own flight log, but only a certified A&P Mechanic or Inspector-Authorized (IA) mechanic can sign off on an annual inspection or major repair. Once a maintenance entry is signed, it becomes **immutable** (read-only and locked), preserving the legal chain of custody and guaranteeing the integrity of the aircraft's records.
 
-## 3. Target Audience
+---
+
+## 3. Key Feature Implementations
+
+Building on our core values, the platform delivers the following key features:
+
+### For Pilots:
+-   **Auto-Logging**: The system uses the device's GPS to automatically detect takeoff and landing times, pre-filling flight log entries to ensure accuracy and reduce manual data entry.
+-   **Squawk Management**: Pilots can instantly report maintenance issues ("squawks") directly from the app, complete with photos and notes. These squawks immediately appear in the maintenance queue for mechanics to address.
+
+### For Maintenance Professionals (A&P, IA):
+-   **Digital Work Orders**: Create, assign, and manage maintenance tasks and work orders. Mechanics can document their work, and Inspector-Authorized (IA) personnel can provide digital sign-offs, locking the record to ensure immutability.
+-   **AD/SB Monitoring**: The system automatically tracks Airworthiness Directives (ADs) and Service Bulletins (SBs) applicable to an aircraft and its specific components based on serial numbers. It provides automated alerts for upcoming or overdue compliance tasks.
+
+### General Platform Features:
+-   **Digital Signatures**: All legally significant entries (e.g., flight logs, maintenance sign-offs, inspections) are signed digitally, creating a secure, compliant, and auditable chain of custody that meets regulatory standards.
+-   **Paper Log Digitization (OCR)**: A core feature is the ability to scan and digitize historical paper logs. Using Optical Character Recognition (OCR), the system makes these scanned records fully searchable, integrating the aircraft's entire paper history into the digital platform.
+
+---
+
+## 4. Target Audience
 
 This application is designed for **aircraft owners, operators, pilots, and certified maintenance professionals (A&P, IA)** who require a reliable, compliant, and efficient system to manage the complex web of aviation records.
 
-## The Central `Aircraft` Entity
+## 5. The Central `Aircraft` Entity
 
 The `Aircraft` entity is the core of the entire system. It acts as the central hub to which all other major data models are connected, representing a specific, physical aircraft. Its relationships define who can operate it, who owns it, what parts it's made of, and what regulations apply to it.
 
