@@ -81,7 +81,7 @@ Flexible storage for user logs, feature flags, or caching.
 
 4. Authentication Strategy (Hono Integration)
 
-The authentication proxy is designed as a standalone, swappable component. This architectural choice allows for flexibility, enabling a quick pivot to a different authentication technology in the future (e.g., migrating from Hono to a custom solution or another third-party service) with minimal impact on the core application.
+The authentication proxy is designed as a standalone, swappable component. This architectural choice allows for flexibility, enabling a quick pivot to a different authentication technology in the future (e.g., migrating from Hono to a custom solution or another third-party service) with minimal impact on the core application. For a detailed guide on the hybrid cookie/JWT approach, please see the [Hybrid Authentication Strategy](./authentication-strategy.md) document.
 
 The Hono proxy will manage the entire social sign-in flow and act as the single point of entry for authorization checks.
 

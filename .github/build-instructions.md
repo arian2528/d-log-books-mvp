@@ -115,50 +115,57 @@ This document provides a granular, step-by-step guide to build and set up the in
 
 ## Phase 3: Authentication Backbone Implementation
 
-**Goal:** Implement the Google Sign-In flow in the Hono proxy and set up the NestJS API to consume it.
+**Goal:** Implement the hybrid authentication flow. The Hono proxy will manage `HttpOnly` session cookies with the Next.js frontend and communicate with the NestJS backend via short-lived JWTs.
 
-### Step 3.1: Hono Auth Proxy Setup
-1.  **Action:** In `apps/auth-proxy`, install Hono's JWT and Passport middleware.
-2.  **Action:** Implement the Google OAuth2 strategy using Passport.
-3.  **Action:** Create the `/auth/google` and `/auth/google/callback` endpoints.
-4.  **Action:** In the callback, find or create a user in the database (via the NestJS API), then mint a JWT containing `userId` and `role`.
-5.  **Action:** Create a Hono middleware to verify the JWT on incoming requests and inject `X-User-ID` and `X-User-Role` headers before proxying the request to the NestJS API.
-6.  **Test:** Write a unit test for the JWT validation middleware.
-
-### Step 3.2: NestJS API Setup
-1.  **Action:** In `apps/api`, install TypeORM, pg, and Zod.
-2.  **Action:** Configure the `AppModule` to connect to the PostgreSQL container using TypeORM.
-3.  **Action:** Create `User` and `Role` TypeORM entities.
-4.  **Action:** Generate the initial database migration.
+### Step 3.1: Hono Auth Proxy Setup (Stateful Leg)
+1.  **Action:** In `apps/auth-proxy`, install dependencies for session management and JWT creation.
     ```bash
-    pnpm --filter api exec typeorm migration:generate -n InitialSchema
+    pnpm --filter auth-proxy add better-auth-hono ioredis jsonwebtoken
+    pnpm --filter auth-proxy add -D @types/jsonwebtoken
     ```
-5.  **Action:** Create a NestJS middleware or guard to extract `X-User-ID` and `X-User-Role` from request headers and attach them to the request object.
-6.  **Action:** Create a `users` module with a `/users/me` endpoint that returns the current user's data.
-7.  **Test:** Write a unit test for the `/users/me` endpoint, mocking the request headers.
+2.  **Action:** Configure `better-auth` with the Redis adapter to handle Google OAuth and session storage.
+3.  **Action:** Implement the `/auth/google` and `/auth/google/callback` endpoints.
+4.  **Action:** In the callback, after `better-auth` validates the user, it will automatically create a session in Redis and set a secure, `HttpOnly` cookie on the user's browser before redirecting them back to the Next.js app.
+5.  **Action:** Create a "translation" middleware in Hono. This middleware will:
+    a.  Verify the incoming session cookie using `better-auth`'s API.
+    b.  If the session is valid, mint a new, short-lived JWT (`~5-15 minutes`) containing the `userId` and `role`.
+    c.  Sign the JWT with a secret shared only with the NestJS API.
+    d.  Attach the JWT to the downstream request as an `Authorization: Bearer <token>` header before proxying the request to the NestJS API.
+6.  **Test:** Write a unit test for the "translation" middleware to ensure it correctly validates a session and attaches a valid JWT.
+
+### Step 3.2: NestJS API Setup (Stateless Leg)
+1.  **Action:** In `apps/api`, install NestJS JWT and Passport packages.
+    ```bash
+    pnpm --filter api add @nestjs/passport @nestjs/jwt passport passport-jwt
+    pnpm --filter api add -D @types/passport-jwt
+    ```
+2.  **Action:** Configure the `AuthModule` to use the `JwtStrategy` from `passport-jwt`. The strategy should be configured to validate the `Bearer` token using the same secret as the Hono proxy.
+3.  **Action:** Create a `JwtAuthGuard` that can be used to protect routes. This guard will automatically validate the incoming JWT and attach the payload (containing `userId` and `role`) to the request object.
+4.  **Action:** Create a `users` module with a `/users/me` endpoint protected by the `JwtAuthGuard`. This endpoint should return the current user's data based on the `userId` from the JWT payload.
+5.  **Test:** Write a unit test for the `/users/me` endpoint, mocking the `Authorization` header with a valid JWT.
 
 ---
 
 ## Phase 4: Frontend and Admin Dashboard
 
-**Goal:** Create a login page and a protected dashboard that displays a welcome message for the admin.
+**Goal:** Create a login page and a protected dashboard that relies on the browser's automatic handling of `HttpOnly` cookies.
 
 ### Step 4.1: Frontend Login Page
 1.  **Action:** In `apps/web`, create a login page at `/login`.
-2.  **Action:** Add a "Sign in with Google" button that links to the Hono proxy's auth endpoint (`/auth/google`).
-3.  **Action:** Create a callback page (e.g., `/auth/callback`) that receives the JWT from the proxy and stores it securely (e.g., in an HttpOnly cookie).
+2.  **Action:** Add a "Sign in with Google" button. This button should be a simple `<a>` tag linking directly to the Hono proxy's auth endpoint (e.g., `http://localhost:8787/auth/google`).
+3.  **Action:** The Next.js app does not need a dedicated callback page. After successful login, the Hono proxy will redirect the user directly to a page of your choice, like `/dashboard`, with the session cookie already set.
 
 ### Step 4.2: Protected Admin Dashboard
 1.  **Action:** Create a dashboard page at `/dashboard`.
-2.  **Action:** Implement client-side logic to check for the JWT. If it's not present, redirect to `/login`.
-3.  **Action:** On the dashboard page, make an authenticated API call to the NestJS `/users/me` endpoint.
-4.  **Action:** Display a welcome message, e.g., "Welcome, [User Name]! Your role is: [User Role]".
+2.  **Action:** The frontend is now "auth-dumb." It does not need to check for a JWT. To fetch data, it simply makes an API call to the Next.js backend (which proxies to Hono, then to NestJS). The browser automatically includes the `HttpOnly` cookie with the request.
+3.  **Action:** On the dashboard page, make an API call to `/api/users/me` (a proxied route).
+4.  **Action:** If the API call is successful, display the user's data: "Welcome, [User Name]! Your role is: [User Role]". If the call fails with a 401 Unauthorized, it means the session is invalid, and the user should be redirected to `/login`.
 5.  **Test:** Create an E2E test using Cypress or Playwright that simulates the entire login flow:
     - Starts at the login page.
     - Clicks the "Sign in" button.
-    - Mocks the Google OAuth callback to the Hono proxy.
+    - Mocks the Google OAuth flow.
     - Verifies the user is redirected to the dashboard.
-    - Verifies the dashboard displays the correct user name and role.
+    - Verifies the dashboard successfully fetches and displays the correct user name and role.
 
 ---
 
