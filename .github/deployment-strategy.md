@@ -102,3 +102,18 @@ To improve global performance and reduce load on the Next.js server, a Content D
     -   **Enhanced Reliability**: Provides an additional layer of redundancy.
 
 This post-MVP approach requires more DevOps expertise but provides the foundation for a highly scalable, resilient, and secure application capable of handling enterprise-level workloads.
+
+---
+
+## 4. Security & Code Quality
+
+To proactively identify and mitigate security vulnerabilities, code smells, and bugs, a static code analysis tool will be integrated into the development lifecycle.
+
+### Recommended Tool: SonarQube
+
+-   **Why**: SonarQube is a leading open-source platform for continuous inspection of code quality. It performs static code analysis to detect security vulnerabilities (e.g., SQL injection, cross-site scripting), bugs, and code smells in over 25 programming languages, including TypeScript, JavaScript, and Go.
+-   **Implementation**:
+    1.  **Integration with CI/CD**: SonarQube analysis will be integrated as a mandatory step in the GitHub Actions CI/CD pipeline.
+    2.  **Quality Gate**: A "Quality Gate" will be configured in SonarQube. This is a set of conditions the code must meet before it can be merged or deployed (e.g., "No new critical vulnerabilities," "Code coverage on new code is greater than 80%").
+    3.  **Pull Request Analysis**: The pipeline will trigger a SonarQube scan on every pull request. The results will be posted directly as a comment on the PR, providing immediate feedback to developers and preventing new issues from being introduced into the main branch.
+    4.  **Dashboard**: SonarQube provides a comprehensive dashboard for visualizing the state of code quality and security over time, helping to track technical debt and prioritize fixes.

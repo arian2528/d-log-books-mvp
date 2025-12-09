@@ -519,3 +519,7 @@ To ensure the API is well-documented and easy for developers (both internal and 
 The application will be monetized based on user roles and access to features. The specific terms of use, pricing tiers, and subscription details will be defined at a later stage.
 
 For the detailed technical implementation of the billing system, please refer to the [Agnostic Monetization & Billing Service](./monetization-strategy.md) document.
+
+### D. Native Mobile Application Strategy
+
+For the detailed approach to mobile development, including the progression from a Progressive Web App (PWA) to native applications, please refer to the [Mobile Application Strategy](./mobile-strategy.md) document.
