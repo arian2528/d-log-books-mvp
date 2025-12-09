@@ -444,7 +444,15 @@ C. Key Development Features & Benefits
 -   **Efficient CI/CD**:
     -   Turborepo's caching and dependency graph analysis will significantly speed up build and test times in the CI/CD pipeline. Only the affected apps and packages will be rebuilt and tested.
 
-## 11. Post-MVP Enhancements
+## 11. Data Management
+
+### A. ETL Strategy
+
+For processes involving bulk data import, export, or synchronization, the project will follow a standardized, agnostic ETL (Extract, Transform, Load) approach. This ensures that data integration is consistent, scalable, and observable.
+
+For a detailed guide on the ETL framework, including principles and recommended technologies, please see the [Agnostic ETL Process Strategy](./etl-strategy.md) document.
+
+## 12. Post-MVP Enhancements
 
 The following features are planned for implementation after the initial MVP launch. For detailed deployment strategies, including CDN implementation, please see the [Production Deployment Strategy](./deployment-strategy.md) document.
 
