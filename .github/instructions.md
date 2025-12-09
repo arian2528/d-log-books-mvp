@@ -365,11 +365,11 @@ Phase 1: Project Scaffolding & Authentication Backbone (1 Week Target)
 
 Phase 2: Core Business Logic (1-2 Weeks Target)
 
-SQL Schema: Define the PostgreSQL schema for all entities as specified in the [Database Schema Instructions](./database-schema.md).
+**Goal:** To implement the core features of the application, including the database schema and the CRUD (Create, Read, Update, Delete) operations that enforce the business rules. For a detailed breakdown of the required UI components and API endpoints for this phase, refer to the [Core Business Logic Implementation Guide](./core-business-implementation.md).
 
-NestJS CRUD: Implement the CoreEntity service in NestJS, including the business logic to enforce RBAC (i.e., filtering results based on the user's role/ID extracted from the headers). Implement Zod validation on all POST/PUT/PATCH endpoints.
-
-Frontend MVP: Build the Dashboard and the form/list views necessary to test the Standard User and Admin permissions. Ensure Optimistic UI updates are used for key user actions.
+-   **SQL Schema**: Define the PostgreSQL schema for all entities as specified in the [Database Schema Instructions](./database-schema.md).
+-   **NestJS CRUD**: Implement the CoreEntity service in NestJS, including the business logic to enforce RBAC (i.e., filtering results based on the user's role/ID extracted from the headers). Implement Zod validation on all POST/PUT/PATCH endpoints.
+-   **Frontend MVP**: Build the Dashboard and the form/list views necessary. Ensure Optimistic UI updates are used for key user actions.
 
 Phase 3: Microservice Integration & Performance (1 Week Target)
 
