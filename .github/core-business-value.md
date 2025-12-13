@@ -93,7 +93,31 @@ This dashboard ensures that owners and operators have immediate visibility into 
 
 ---
 
-## 7. Detailed Entity Properties
+## 7. Data Isolation & Row-Level Security (RLS) Strategy
+
+To ensure data integrity and enforce strict access control, the system will implement a robust data isolation strategy using PostgreSQL's Row-Level Security (RLS). The security model is based on two core principles: control over actions (signing) and control over visibility (reviewing).
+
+### A. Control Over Actions (Signing Logs)
+
+The most critical security boundary is at the point of signing a log entry. RLS policies will enforce that a user can only sign logs that are explicitly assigned to them or that fall under their direct responsibility.
+
+-   **Core Rule**: A user can only modify or sign their own records. An attempt by `User A` to sign a log entry belonging to `User B` will be blocked at the database level.
+
+### B. Control Over Visibility (Reviewing Logs)
+
+While signing is restricted to individuals, reviewing logbook data is based on a user's role. RLS policies will be designed to grant broader read access to roles that require oversight, such as `Operator` or `Owner`.
+
+-   **Core Rule**: The visibility of logbook entries, compliance status, and component health is determined by a user's role in relation to the `Aircraft` they are associated with.
+-   **Example Scenario**:
+    -   A `Pilot` can see all log entries they have personally signed for any aircraft they have flown.
+    -   An `Operator` or `Owner` can see *all* log entries (regardless of who signed them) for any aircraft within their fleet.
+    -   A `Mechanic` can only see maintenance-related logs for aircraft they are assigned to work on.
+
+This dual approach ensures that while actions remain strictly controlled at the individual user level, data visibility is managed through a flexible, role-based model, allowing authorized personnel to have a complete view of the aircraft's status without being able to alter historical records improperly.
+
+---
+
+## 8. Detailed Entity Properties
 
 This section provides a detailed breakdown of each entity's properties using the Database Markup Language (DBML).
 
@@ -171,7 +195,6 @@ Table pilot [icon: user, color: red]{
   medical_certificate_expiry date
 }
 Table pilot_log [icon: book-open, color: lightblue] {
-  
   id string [pk]
   date date
   total_flight_time decimal
@@ -209,20 +232,17 @@ Table pilot_log [icon: book-open, color: lightblue] {
   pilot_id string
 }
 Table certificate [icon: award, color: gold] {
-  
   id string [pk]
   grade string
   number string
   date_issue date
 }
 Table rating [icon: star, color: pink] {
-  
   id string [pk]
   category_class_or_type string
   date_issue date
 }
 Table medical_flight_proficiency [icon: activity, color: teal] {
-  
   id string [pk]
   pilot_id string
   medical_certificate_date date
@@ -230,15 +250,13 @@ Table medical_flight_proficiency [icon: activity, color: teal] {
   flight_review_date date
   instrument_proficiency_date date
 }
-Table aircraft_hours_mentries [icon: clock, color: gray] {
-  
+Table aircraft_hours_entries [icon: clock, color: gray] {
   id string [pk]
   hours float
   date date
   aircraft_id string
 }
 Table stc_alterations [icon: tool, color: brown] {
-  
   id string [pk]
   stc_number string
   mfg string
@@ -248,7 +266,6 @@ Table stc_alterations [icon: tool, color: brown] {
   location string
 }
 Table directives_bulletines [icon: alert-triangle, color: magenta] {
-  
   id string [pk]
   type string
   number date
@@ -260,7 +277,6 @@ Table directives_bulletines [icon: alert-triangle, color: magenta] {
   made_by string
 }
 Table hardware_log [icon: settings, color: gray] {
-  
   id string [pk]
   log_type string
   flight_hours float
@@ -272,7 +288,6 @@ Table hardware_log [icon: settings, color: gray] {
   component string
 }
 Table operator_log [icon: file, color: yellow] {
-  
   id string [pk]
   flight_hours float
   date date
@@ -282,5 +297,89 @@ Table operator_log [icon: file, color: yellow] {
   operator_responsible string
   other_data string
 }
+
+Table mechanic [icon: wrench, color: navy] {
+  id string [pk]
+  name string
+  license_number string
+  certificate_type string
+  certificate_expiry date
+}
+
+Table owner [icon: briefcase, color: indigo] {
+  id string [pk]
+  name string
+  contact_info string
+}
+
+// Junction tables for many-to-many relationships
+Table aircraft_operators [icon: link, color: lightgray] {
+  aircraft_id string [ref: > aircraft.id]
+  operator_id string [ref: > operator.id]
+  assignment_date date
+  end_date date
+  indexes {
+    (aircraft_id, operator_id) [pk]
+  }
+}
+
+Table aircraft_pilots [icon: link, color: lightgray] {
+  aircraft_id string [ref: > aircraft.id]
+  pilot_id string [ref: > pilot.id]
+  authorization_date date
+  end_date date
+  indexes {
+    (aircraft_id, pilot_id) [pk]
+  }
+}
+
+Table aircraft_owners [icon: link, color: lightgray] {
+  aircraft_id string [ref: > aircraft.id]
+  owner_id string [ref: > owner.id]
+  ownership_percentage decimal
+  start_date date
+  end_date date
+  indexes {
+    (aircraft_id, owner_id) [pk]
+  }
+}
+
+Table aircraft_installed_parts [icon: link, color: lightgray] {
+  aircraft_id string [ref: > aircraft.id]
+  component_part_id string [ref: > compoonent_parts.id]
+  installation_date date
+  removal_date date
+  indexes {
+    (aircraft_id, component_part_id) [pk]
+  }
+}
+
+Table aircraft_stc_alterations [icon: link, color: lightgray] {
+  aircraft_id string [ref: > aircraft.id]
+  stc_alteration_id string [ref: > stc_alterations.id]
+  application_date date
+  indexes {
+    (aircraft_id, stc_alteration_id) [pk]
+  }
+}
+
+// define relationships
+// One-to-many relationships
+aircraft.id < engine.id
+aircraft.id < propeller.id
+pilot_log.pilot_id > pilot.id
+pilot_log.aircraft_id > aircraft.id
+medical_flight_proficiency.pilot_id > pilot.id
+aircraft_hours_entries.aircraft_id > aircraft.id
+hardware_log.mechanic_responsible > mechanic.id
+operator_log.operator_responsible > operator.id
+hardware_log.component > propeller.id
+hardware_log.component > engine.id
+hardware_log.component > aircraft.id
+
+// Many-to-many relationships (via junction tables)
+pilot.id <> certificate.id
+pilot.id <> rating.id
+aircraft.id <> directives_bulletines.id
 ```
 
