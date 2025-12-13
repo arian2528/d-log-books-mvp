@@ -21,6 +21,10 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
     -   The `SignLogEntryButton` will make a `POST` request to a new API endpoint (e.g., `/api/log-entries/:id/sign`).
     -   Data fetching for the dashboard will use SWR or React Query to handle caching and revalidation.
 
+-   **Testing**:
+    -   **Component Tests**: Write tests for `LogEntryForm.tsx` and `SignLogEntryButton.tsx` using React Testing Library to verify form handling, user input, and correct API call invocation.
+    -   **Integration Test**: Create a test that simulates the entire signing flow, mocking the API response to verify the UI updates correctly (e.g., dashboard data is refetched).
+
 ### Backend (NestJS)
 
 -   **API Endpoints to be Created**:
@@ -37,6 +41,10 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
             6.  Update the `total_hours` and `total_cycles` on the `Aircraft` and component records.
             7.  Commit the transaction.
             8.  Return a success response.
+
+-   **Testing**:
+    -   **Unit Test**: Write a unit test for the service method containing the business logic. Mock the database repository to test the calculation and transaction logic in isolation.
+    -   **Integration Test**: Write an integration test for the `POST /log-entries/:id/sign` endpoint using Supertest. Use a test database to verify that the endpoint correctly authenticates the user, validates the payload, and updates the database records as expected.
 
 -   **Database Schema**:
     -   The `log_entries` table will need a `signed_at` timestamp and a `signed_by_user_id` foreign key.
@@ -63,6 +71,10 @@ This feature allows maintenance discrepancies ("squawks") to be managed independ
     -   `PATCH /squawks/:id` to update a squawk's status (e.g., clear, defer).
     -   `POST /squawks/:id/transfer` to move a squawk to a different aircraft.
 
+-   **Testing**:
+    -   **Component Tests**: Write tests for `CreateSquawkForm.tsx` and `TransferSquawkModal.tsx` to ensure they function correctly.
+    -   **E2E Test**: Create an end-to-end test using Cypress or Playwright that simulates a user creating a squawk, and then a different user (e.g., a mechanic) transferring it to another aircraft.
+
 ### Backend (NestJS)
 
 -   **API Endpoints to be Created**:
@@ -75,6 +87,10 @@ This feature allows maintenance discrepancies ("squawks") to be managed independ
             2.  Verify the squawk is in a "transferable" state (e.g., not cleared).
             3.  Update the `aircraft_id` on the squawk record to the `target_aircraft_id`.
             4.  Create a historical record of the transfer for audit purposes.
+
+-   **Testing**:
+    -   **Unit Tests**: Write unit tests for the service logic, particularly for the transfer functionality, to ensure it correctly handles state verification and historical record creation.
+    -   **Integration Tests**: Write integration tests for all three squawk-related endpoints (`/squawks`, `/squawks/:id`, `/squawks/:id/transfer`) to validate the full request/response cycle and database interactions.
 
 -   **Database Schema**:
     -   The `squawks` table must have a foreign key `aircraft_id` that links it to the `aircrafts` table.

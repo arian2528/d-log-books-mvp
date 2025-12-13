@@ -346,44 +346,70 @@ Deployment Stage: On merge to main, GitHub Actions automatically pushes the cont
 
 7. Phased Implementation Plan
 
+The implementation will follow a phased approach, with each phase incorporating specific testing and observability requirements to ensure quality and reliability from the start.
+
 Phase 1: Project Scaffolding & Authentication Backbone (1 Week Target)
 
-**Goal:** To establish the complete monorepo structure and implement the core hybrid authentication flow. For the granular, command-by-command setup for this phase, please refer to the official [MVP Build Instructions](./build-instructions.md).
+**Goal:** To establish the complete monorepo structure, implement the core hybrid authentication flow, and set up the foundational testing and logging infrastructure. For the granular, command-by-command setup for this phase, please refer to the official [MVP Build Instructions](./build-instructions.md).
 
--   **Monorepo Setup**: Initialize the pnpm workspace with Turborepo.
--   **Application Scaffolding**: Create the initial Next.js, NestJS, and Hono applications.
--   **Authentication Implementation**: Implement the stateful cookie-based auth between the frontend and proxy, and the stateless JWT-based auth between the proxy and the backend.
+-   **Monorepo & Scaffolding**: Initialize the pnpm workspace with Turborepo and create the initial Next.js, NestJS, and Hono applications.
+-   **Authentication Implementation**: Implement the stateful cookie-based auth (frontend to proxy) and stateless JWT-based auth (proxy to backend).
 -   **Dockerization**: Containerize all services for a consistent local development environment.
+-   **Observability**:
+    -   Implement basic **structured JSON logging** in all services (Next.js, NestJS, Hono) to ensure logs are machine-readable.
+    -   Ensure a `correlationId` is generated at the gateway and passed to all services for request tracing.
+-   **Testing**:
+    -   Set up Jest and React Testing Library for the frontend, and Jest/Supertest for the backend services.
+    -   Write initial **unit tests** for the core authentication logic in each service.
+    -   Configure the initial `ci.yml` pipeline in GitHub Actions to run all unit tests on every pull request.
 
 Phase 2: Initial Deployment for Stakeholder Review (1 Week Target)
 
-**Goal:** To deploy the skeleton application with the authentication backbone to a live environment. This will provide an early opportunity for stakeholders to see the progress and interact with the login flow.
+**Goal:** To deploy the skeleton application with the authentication backbone to a live environment, establishing the CI/CD pipeline and basic monitoring.
 
--   **Deployment Strategy**: Follow the steps outlined in the **[MVP Phase Deployment Strategy](./deployment-strategy.md)** document.
--   **Frontend Deployment**: Deploy the Next.js application to Vercel.
--   **Backend Deployment**: Deploy the Hono proxy and NestJS monolith as containerized services on Google Cloud Run.
--   **Database Setup**: Provision the initial PostgreSQL database using a managed service like Supabase.
--   **CI/CD Pipeline**: Configure a basic CI/CD pipeline in GitHub Actions to automatically build and deploy the applications on merge to the `main` branch.
+-   **Deployment Strategy**: Follow the steps in the **[MVP Phase Deployment Strategy](./deployment-strategy.md)**.
+-   **Infrastructure Setup**: Deploy the Next.js app to Vercel, containerized backend services to Google Cloud Run, and provision the PostgreSQL database on Supabase.
+-   **Observability**:
+    -   Configure the production environments to collect `stdout/stderr` logs into a centralized logging platform (e.g., Datadog, Better Stack).
+    -   Set up an initial monitoring dashboard to view and search logs from all services.
+-   **Testing**:
+    -   Develop **integration tests** for the complete authentication flow (user login -> proxy session -> backend JWT validation).
+    -   Enhance the CI/CD pipeline to run both unit and integration tests before allowing a merge to `main`.
 
 Phase 3: Core Business Logic (1-2 Weeks Target)
 
-**Goal:** To implement the core features of the application, including the database schema and the CRUD (Create, Read, Update, Delete) operations that enforce the business rules. For a detailed breakdown of the required UI components and API endpoints for this phase, refer to the [Core Business Logic Implementation Guide](./core-business-implementation.md).
+**Goal:** To implement the core business features, including the database schema and CRUD operations, with comprehensive testing and monitoring. For a detailed breakdown, refer to the [Core Business Logic Implementation Guide](./core-business-implementation.md).
 
--   **SQL Schema**: Define the PostgreSQL schema for all entities as specified in the [Database Schema Instructions](./database-schema.md).
--   **NestJS CRUD**: Implement the CoreEntity service in NestJS. This includes the business logic to enforce RBAC by validating the incoming JWT and using its contents (e.g., `userId`, `role`) to control data access. Implement Zod validation on all POST/PUT/PATCH endpoints.
--   **Frontend MVP**: Build the Dashboard and the form/list views necessary. Ensure Optimistic UI updates are used for key user actions.
+-   **Database & Business Logic**: Define the SQL schema and implement the NestJS services with RBAC and Zod validation.
+-   **Frontend MVP**: Build the required dashboard, form, and list views.
+-   **Observability**:
+    -   Enrich structured logs with critical context, such as `userId`, API endpoint, and business-specific data.
+    -   Configure initial alerts in the monitoring platform for key error spikes and breaches of the 5-second SLA.
+-   **Testing**:
+    -   Write **unit and integration tests** for all new NestJS services, controllers, and repositories.
+    -   Write **component tests** for all new Next.js components to verify UI rendering and behavior.
+    -   Begin developing **contract tests** (e.g., using Pact) to verify the API contract between the Next.js frontend and the NestJS backend.
 
 Phase 4: Microservice Integration & Performance (1 Week Target)
 
-Golang Microservice: Develop the initial Golang microservice that receives requests from the NestJS monolith via HTTP/gRPC. Implement the Golang side of the Contract Test.
+**Goal:** To integrate the first high-performance microservice, implement caching, and finalize the comprehensive testing and deployment pipeline.
 
-Caching Implementation: Integrate Redis into the NestJS monolith. Implement caching for user role lookups to minimize database hits on every request. Apply SSG/ISR policies to public Next.js pages.
-
-Testing & CD: Implement all Unit, Integration, and Contract Tests in the CI pipeline. Finalize the CD process for automated deployment, including tests for Rate Limiting and Idempotency.
+-   **Microservice & Caching**: Develop the Golang microservice and integrate Redis for caching in the NestJS monolith.
+-   **Observability**:
+    -   Ensure the Golang microservice implements structured logging and correctly propagates the `correlationId`.
+    -   Refine monitoring dashboards to track performance metrics for the new service and caching layer (e.g., cache hit/miss ratio).
+-   **Testing**:
+    -   Finalize and enforce **contract tests** between the NestJS monolith and the Golang microservice.
+    -   Implement initial **End-to-End (E2E) tests** (e.g., using Cypress/Playwright) for the most critical user flows.
+    -   Add **security and reliability tests** (for rate limiting, idempotency) to the CI pipeline.
+    -   Finalize the Continuous Deployment (CD) process, ensuring the full suite of tests (Unit, Integration, Contract, E2E, Security) runs automatically before any deployment to production.
 
 Phase 5: Monetization & Billing (Post-MVP)
 
-Billing Microservice: Develop and deploy the dedicated, event-driven Billing Microservice as detailed in the [Agnostic Monetization & Billing Service](./monetization-strategy.md) document. Integrate the initial payment provider (e.g., Stripe).
+**Goal:** To develop and integrate the billing microservice as detailed in the [Agnostic Monetization & Billing Service](./monetization-strategy.md) document.
+
+-   **Implementation**: Develop the dedicated, event-driven Billing Microservice and integrate the initial payment provider.
+-   **Testing**: Apply the same rigorous, multi-layered testing strategy (unit, integration, contract, E2E) to the new billing service to ensure its reliability and accuracy.
 
 8. Key Deliverables for MVP Launch
 

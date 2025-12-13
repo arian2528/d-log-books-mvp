@@ -134,15 +134,17 @@ This document provides a granular, step-by-step guide to build and set up the in
 6.  **Test:** Write a unit test for the "translation" middleware to ensure it correctly validates a session and attaches a valid JWT.
 
 ### Step 3.2: NestJS API Setup (Stateless Leg)
-1.  **Action:** In `apps/api`, install NestJS JWT and Passport packages.
+1.  **Action:** In `apps/api`, install NestJS JWT and Passport packages, along with a logging library like `pino`.
     ```bash
-    pnpm --filter api add @nestjs/passport @nestjs/jwt passport passport-jwt
+    pnpm --filter api add @nestjs/passport @nestjs/jwt passport passport-jwt pino-http pino-pretty
     pnpm --filter api add -D @types/passport-jwt
     ```
 2.  **Action:** Configure the `AuthModule` to use the `JwtStrategy` from `passport-jwt`. The strategy should be configured to validate the `Bearer` token using the same secret as the Hono proxy.
-3.  **Action:** Create a `JwtAuthGuard` that can be used to protect routes. This guard will automatically validate the incoming JWT and attach the payload (containing `userId` and `role`) to the request object.
-4.  **Action:** Create a `users` module with a `/users/me` endpoint protected by the `JwtAuthGuard`. This endpoint should return the current user's data based on the `userId` from the JWT payload.
-5.  **Test:** Write a unit test for the `/users/me` endpoint, mocking the `Authorization` header with a valid JWT.
+3.  **Action:** In `main.ts`, configure `pino-http` as the logger to enforce structured JSON logging.
+4.  **Action:** Create a `JwtAuthGuard` that can be used to protect routes. This guard will automatically validate the incoming JWT and attach the payload (containing `userId` and `role`) to the request object.
+5.  **Action:** Create a `users` module with a `/users/me` endpoint protected by the `JwtAuthGuard`. This endpoint should return the current user's data based on the `userId` from the JWT payload.
+6.  **Test:** Write a **unit test** for the `/users/me` endpoint, mocking the `Authorization` header with a valid JWT.
+7.  **Test:** Write an **integration test** for the `JwtAuthGuard` to ensure it properly protects routes and validates tokens.
 
 ---
 
