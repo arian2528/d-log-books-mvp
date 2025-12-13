@@ -22,7 +22,7 @@ User Profile: Simple view/edit of name email and role.
 
 B. Core Data Functionality (The "Do" Feature)
 
-Log Entry Creation: Users can create log entries in the relevant logbooks (Operator, Airframe, Engine, etc.).
+Log Entry Creation: Users can create log entries in the relevant logbooks. The entry form will be dynamic, presenting different fields based on the user's role and the specific logbook being accessed (e.g., Pilot Log, Hardware Log).
 
 Role-Based Access Control (RBAC) & Signing:
 

@@ -13,7 +13,11 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
 -   **UI/UX Guidelines**: Before creating any components, developers must consult the [UI Preferences & Design System](./ui-preferences.md) document. All components should adhere to the specified colors, typography, spacing, and interaction patterns to ensure a consistent user experience.
 
 -   **UI Components to be Built**:
-    -   `LogEntryForm.tsx`: A form for creating new log entries (e.g., flight logs, maintenance logs). It will include fields for flight hours, cycles, etc.
+    -   `LogEntryForm.tsx`: A dynamic form component for creating new log entries. This component's primary responsibility is to render the correct set of input fields based on the user's role and the type of log being created.
+        -   **Role-Based Logic**: The component will determine the user's role (e.g., `Pilot`, `Mechanic`) from the application's authentication context.
+        -   **Dynamic Field Rendering**: Based on the role, it will display fields corresponding to the appropriate log entity as defined in the `core-business-value.md` document.
+            -   **Example (Pilot)**: If the user has the `Pilot` role, the form will render fields for the `pilot_log` entity (e.g., `total_flight_time`, `departure_location`, `landings_day`).
+            -   **Example (Mechanic)**: If the user has the `Mechanic` role, the form will render fields for the `hardware_log` entity (e.g., `log_type`, `work_type`, `description`, `component`).
     -   `SignLogEntryButton.tsx`: A button that triggers the signing action. This component will handle the API call and display loading/success/error states. It should use an optimistic UI update pattern.
     -   `AircraftStatusDashboard.tsx`: A dashboard component that displays the aircraft's total times. This component should re-fetch its data or have its cache invalidated after a successful signing operation.
 
