@@ -78,7 +78,22 @@ The `Aircraft` entity maintains many-to-many relationships with several other ke
 
 ---
 
-## 6. Detailed Entity Properties
+## 6. The Aircraft-Centric Dashboard
+
+Given that the `Aircraft` is the central entity, the primary user interface for **Operators** and **Owners** will be an aircraft-centric dashboard. This dashboard will provide a comprehensive, at-a-glance overview of the aircraft's status, health, and compliance.
+
+The dashboard is designed to be the single pane of glass through which stakeholders can visualize:
+
+-   **Logbook Status**: A clear and intuitive view of the status of all associated logbooks (Airframe, Engine, Propeller, etc.), including alerts for entries that are due for sign-off.
+-   **Compliance Health**: The status of mandatory Airworthiness Directives (ADs) and recommended Service Bulletins (SBs). The UI will clearly distinguish between overdue, upcoming, and completed items.
+-   **Component Health**: A visual representation of the health and remaining service life of critical components. This will be based on cycles, hours, or calendar limits.
+-   **Aircraft Health Rating**: In a future iteration, these data points will contribute to an overall "Health Rating" for the aircraft, providing a simple score or grade to summarize its maintenance and compliance posture.
+
+This dashboard ensures that owners and operators have immediate visibility into the operational readiness and legal status of their assets.
+
+---
+
+## 7. Detailed Entity Properties
 
 This section provides a detailed breakdown of each entity's properties using the Database Markup Language (DBML).
 
