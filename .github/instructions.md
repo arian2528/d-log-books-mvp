@@ -355,15 +355,25 @@ Phase 1: Project Scaffolding & Authentication Backbone (1 Week Target)
 -   **Authentication Implementation**: Implement the stateful cookie-based auth between the frontend and proxy, and the stateless JWT-based auth between the proxy and the backend.
 -   **Dockerization**: Containerize all services for a consistent local development environment.
 
-Phase 2: Core Business Logic (1-2 Weeks Target)
+Phase 2: Initial Deployment for Stakeholder Review (1 Week Target)
+
+**Goal:** To deploy the skeleton application with the authentication backbone to a live environment. This will provide an early opportunity for stakeholders to see the progress and interact with the login flow.
+
+-   **Deployment Strategy**: Follow the steps outlined in the **[MVP Phase Deployment Strategy](./deployment-strategy.md)** document.
+-   **Frontend Deployment**: Deploy the Next.js application to Vercel.
+-   **Backend Deployment**: Deploy the Hono proxy and NestJS monolith as containerized services on Google Cloud Run.
+-   **Database Setup**: Provision the initial PostgreSQL database using a managed service like Supabase.
+-   **CI/CD Pipeline**: Configure a basic CI/CD pipeline in GitHub Actions to automatically build and deploy the applications on merge to the `main` branch.
+
+Phase 3: Core Business Logic (1-2 Weeks Target)
 
 **Goal:** To implement the core features of the application, including the database schema and the CRUD (Create, Read, Update, Delete) operations that enforce the business rules. For a detailed breakdown of the required UI components and API endpoints for this phase, refer to the [Core Business Logic Implementation Guide](./core-business-implementation.md).
 
 -   **SQL Schema**: Define the PostgreSQL schema for all entities as specified in the [Database Schema Instructions](./database-schema.md).
--   **NestJS CRUD**: Implement the CoreEntity service in NestJS, including the business logic to enforce RBAC (i.e., filtering results based on the user's role/ID extracted from the headers). Implement Zod validation on all POST/PUT/PATCH endpoints.
--   **Frontend MVP**: Build the Dashboard and the form/list views necessary. Ensure Optimistic UI updates are used for key user actions.
 -   **NestJS CRUD**: Implement the CoreEntity service in NestJS. This includes the business logic to enforce RBAC by validating the incoming JWT and using its contents (e.g., `userId`, `role`) to control data access. Implement Zod validation on all POST/PUT/PATCH endpoints.
-Phase 3: Microservice Integration & Performance (1 Week Target)
+-   **Frontend MVP**: Build the Dashboard and the form/list views necessary. Ensure Optimistic UI updates are used for key user actions.
+
+Phase 4: Microservice Integration & Performance (1 Week Target)
 
 Golang Microservice: Develop the initial Golang microservice that receives requests from the NestJS monolith via HTTP/gRPC. Implement the Golang side of the Contract Test.
 
@@ -371,7 +381,7 @@ Caching Implementation: Integrate Redis into the NestJS monolith. Implement cach
 
 Testing & CD: Implement all Unit, Integration, and Contract Tests in the CI pipeline. Finalize the CD process for automated deployment, including tests for Rate Limiting and Idempotency.
 
-Phase 4: Monetization & Billing (Post-MVP)
+Phase 5: Monetization & Billing (Post-MVP)
 
 Billing Microservice: Develop and deploy the dedicated, event-driven Billing Microservice as detailed in the [Agnostic Monetization & Billing Service](./monetization-strategy.md) document. Integrate the initial payment provider (e.g., Stripe).
 
