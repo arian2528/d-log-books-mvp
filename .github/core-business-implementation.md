@@ -18,7 +18,7 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
         -   **Dynamic Field Rendering**: Based on the role, it will display fields corresponding to the appropriate log entity as defined in the `core-business-value.md` document.
             -   **Example (Pilot)**: If the user has the `Pilot` role, the form will render fields for the `pilot_log` entity (e.g., `total_flight_time`, `departure_location`, `landings_day`).
             -   **Example (Mechanic)**: If the user has the `Mechanic` role, the form will render fields for the `hardware_log` entity (e.g., `log_type`, `work_type`, `description`, `component`).
-    -   `SignLogEntryButton.tsx`: A button that triggers the signing action. This component will handle the API call and display loading/success/error states. It should use an optimistic UI update pattern.
+    -   `SignLogEntryButton.tsx`: A button that triggers the signing action. This component must be idempotent. It will handle the API call, display loading/success/error states, and should disable itself immediately on click to prevent multiple submissions. It should also use an optimistic UI update pattern.
     -   `AircraftStatusDashboard.tsx`: A dashboard component that displays the aircraft's total times. This component should re-fetch its data or have its cache invalidated after a successful signing operation.
 
 -   **API Interaction**:
@@ -33,18 +33,20 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
 
 -   **API Endpoints to be Created**:
     -   `POST /log-entries/:id/sign`:
+        -   **Idempotency**: This endpoint must be idempotent. If the same request is received multiple times, it should not result in duplicate updates. The business logic should first check if the log entry has already been signed. If it has, the endpoint should return the existing signed data without performing the update again.
         -   **Guard**: `JwtAuthGuard` to ensure the user is authenticated.
         -   **Authorization**: The service logic must verify that the user's role is permitted to sign this type of log entry (e.g., a Pilot can sign a flight log, a Mechanic can sign a maintenance log).
         -   **Validation**: Use a DTO with Zod to validate any incoming payload.
         -   **Business Logic**:
             1.  Find the `LogEntry` by its ID.
-            2.  Mark the entry as signed and immutable.
-            3.  Start a database transaction.
-            4.  Fetch the associated `Aircraft` and its related components (e.g., `Engine`, `Propeller`).
-            5.  Calculate the new total hours/cycles based on the log entry data.
-            6.  Update the `total_hours` and `total_cycles` on the `Aircraft` and component records.
-            7.  Commit the transaction.
-            8.  Return a success response.
+            2.  **Check if already signed**. If `signed_at` is not null, return a success response immediately.
+            3.  Mark the entry as signed and immutable.
+            4.  Start a database transaction.
+            5.  Fetch the associated `Aircraft` and its related components (e.g., `Engine`, `Propeller`).
+            6.  Calculate the new total hours/cycles based on the log entry data.
+            7.  Update the `total_hours` and `total_cycles` on the `Aircraft` and component records.
+            8.  Commit the transaction.
+            9.  Return a success response.
 
 -   **Testing**:
     -   **Unit Test**: Write a unit test for the service method containing the business logic. Mock the database repository to test the calculation and transaction logic in isolation.
