@@ -187,7 +187,7 @@ export class RlsMiddleware implements NestMiddleware {
 
 With this setup, any query to `core_entity` from your application (using TypeORM) will automatically be filtered by PostgreSQL, so a user can only see and manipulate their own rows. This is a powerful and secure way to implement multi-tenancy.
 
-To ensure consistency between development and production environments, all services will be containerized using Docker.
+To ensure consistency between development and production environments, all services will be containerized using Docker. The specific steps for creating the necessary `Dockerfile`s and `docker-compose.yml` are detailed in the [MVP Build Instructions](./build-instructions.md).
 
 1.  **Local Development (Docker Compose)**:
     *   A `docker-compose.yml` file at the root of the monorepo will define the services for the entire stack (Next.js, NestJS, Hono, PostgreSQL, Redis).
