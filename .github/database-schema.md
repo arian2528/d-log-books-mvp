@@ -1,80 +1,204 @@
 
-# Database Schema Instructions
+# Database Schema
 
-This document outlines the database schema for the aviation record system. The central entity is the `Aircraft`, which is connected to various other entities through many-to-many and one-to-one relationships.
+This document outlines the database schema for the aviation record system, based on the entities defined in the Core Business Value document.
 
-## 1. Central Entity: `aircrafts`
+---
 
-This is the core table of the application.
+## 1. Core Entities
+
+### `aircraft`
+This is the core table of the application, representing a physical aircraft.
 
 **Columns:**
-- `id` (Primary Key, UUID): Unique identifier for the aircraft.
-- `tailNumber` (String, Unique): The aircraft's registration number (e.g., "N12345").
-- `manufacturer` (String): The company that built the aircraft (e.g., "Cessna").
+- `id` (PK, String): Unique identifier.
+- `type` (String): Aircraft type.
+- `registration_number` (String, Unique): The aircraft's registration number (e.g., "N12345").
 - `model` (String): The specific model of the aircraft (e.g., "172 Skyhawk").
-- `serialNumber` (String): The manufacturer's serial number.
+- `serial` (String): The manufacturer's serial number.
+- `manufacturer` (String): The company that built the aircraft (e.g., "Cessna").
+- `date_of_manufacture` (Date): Date of manufacture.
+- `category` (Integer): Aircraft category.
+- `hours` (Float): Total hours on the airframe.
 
-## 2. Entities with Many-to-Many Relationship to `aircrafts`
+### `engine`
+Represents an aircraft engine, which can be tracked independently.
 
-These entities can be associated with multiple aircraft, and each aircraft can be associated with multiple instances of these entities. A join table should be used for each relationship.
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `serial_number` (String, Unique): Engine serial number.
+- `type` (String): Engine type.
+- `manufacturer` (String): Engine manufacturer.
+- `model` (String): Engine model.
+- `date_mfg` (Date): Date of manufacture.
+- `location` (String): Current location (e.g., installed on aircraft ID or in storage).
+- `hours_since_overhaul` (Integer): Hours since last major overhaul.
 
-### `pilots`
-- `id` (Primary Key, UUID)
-- `name` (String)
-- **Relationship**: `aircrafts_pilots` join table (`aircraft_id`, `pilot_id`).
+### `propeller`
+Represents an aircraft propeller, which can be tracked independently.
 
-### `owners`
-- `id` (Primary Key, UUID)
-- `name` (String)
-- **Relationship**: `aircrafts_owners` join table (`aircraft_id`, `owner_id`).
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `serial_number` (String, Unique): Propeller serial number.
+- `type` (String): Propeller type.
+- `manufacturer` (String): Propeller manufacturer.
+- `model` (String): Propeller model.
+- `date_mfg` (Date): Date of manufacture.
+- `location` (String): Current location.
+- `hours_since_overhaul` (Integer): Hours since last major overhaul.
+- `hub_model` (String): Hub model number.
+- `hub_serial` (String): Hub serial number.
+- `blade_model` (String): Blade model number.
+- `blade_serial` (String): Blade serial number.
 
-### `operators`
-- `id` (Primary Key, UUID)
-- `name` (String)
-- **Relationship**: `aircrafts_operators` join table (`aircraft_id`, `operator_id`).
+### `compoonent_parts`
+Represents other tracked components and parts.
 
-### `aircraft_parts`
-- `id` (Primary Key, UUID)
-- `partName` (String)
-- `partNumber` (String)
-- **Relationship**: `aircrafts_parts` join table (`aircraft_id`, `part_id`).
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `ecomponent` (String): Electronic component identifier.
+- `part_name` (String): Name of the part.
+- `mfg` (String): Manufacturer.
+- `model` (String): Model number.
+- `serial` (String): Serial number.
+- `qty` (Integer): Quantity.
+- `location` (String): Install location.
+- `install_date` (Date): Date of installation.
+- `exp_date` (Date): Expiration date (if applicable).
+- `time_limit` (String): Time limit for use (e.g., hours, cycles).
 
-### `stc_alterations` (Supplemental Type Certificate)
-- `id` (Primary Key, UUID)
-- `description` (Text)
-- **Relationship**: `aircrafts_stc_alterations` join table (`aircraft_id`, `stc_alteration_id`).
+---
 
-### `directives_bulletins`
-- `id` (Primary Key, UUID)
-- `title` (String)
-- `description` (Text)
-- **Relationship**: `aircrafts_directives_bulletins` join table (`aircraft_id`, `directive_bulletin_id`).
+## 2. People & Organization Entities
 
-## 3. Logbook Entities with One-to-One Relationship to `aircrafts`
+### `pilot`
+Represents a pilot.
 
-Each aircraft has its own set of logbooks. This is a one-to-one relationship where the logbook's existence is tied to a specific aircraft.
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `name` (String): Pilot's full name.
+- `license_number` (String): Pilot's license number.
+- `ratings` (String): Pilot's ratings (e.g., "Instrument, Multi-Engine").
+- `medical_certificate_expiry` (Date): Expiry date of medical certificate.
 
-### `pilot_logs`
-- `id` (Primary Key, UUID)
-- `aircraft_id` (Foreign Key to `aircrafts.id`)
+### `operator`
+Represents the aircraft operator or company.
 
-### `operator_logs`
-- `id` (Primary Key, UUID)
-- `aircraft_id` (Foreign Key to `aircrafts.id`)
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `name` (String): Operator's name.
+- `certificate_number` (String): Operator's certificate number.
+- `contact_info` (String): Contact information.
 
-### `airframe_logs`
-- `id` (Primary Key, UUID)
-- `aircraft_id` (Foreign Key to `aircrafts.id`)
+---
 
-### `engine_logs`
-- `id` (Primary Key, UUID)
-- `aircraft_id` (Foreign Key to `aircrafts.id`)
+## 3. Log & Record Entities
 
-### `propeller_logs`
-- `id` (Primary Key, UUID)
-- `aircraft_id` (Foreign Key to `aircrafts.id`)
+### `pilot_log`
+A detailed log entry for a pilot's flight.
 
-### `avionics_logs`
-- `id` (Primary Key, UUID)
-- `aircraft_id` (Foreign Key to `aircrafts.id`)
+**Columns:**
+- `id` (PK, String): Unique identifier for the log entry.
+- `pilot_id` (FK, String): Foreign key to the `pilot` table.
+- `aircraft_id` (FK, String): Foreign key to the `aircraft` table.
+- `date` (Date): Date of the flight.
+- `total_flight_time` (Decimal): Total duration of the flight.
+- `departure_location` (String): Departure airport/location.
+- `arrival_location` (String): Arrival airport/location.
+- ... (and all other detailed fields from the DBML).
+
+### `hardware_log`
+A generic log for maintenance and work on physical components (airframe, engine, etc.).
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `log_type` (String): Type of log (e.g., "Engine", "Airframe").
+- `flight_hours` (Float): Aircraft hours at the time of the log entry.
+- `date` (Date): Date of the work.
+- `work_type` (String): Type of work performed (e.g., "Inspection", "Repair").
+- `work_order` (String): Work order number.
+- `description` (String): Description of the work.
+- `mechanic_responsible` (String): Name or ID of the mechanic.
+- `component` (String): Specific component worked on.
+
+### `operator_log`
+A log for operational records.
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `flight_hours` (Float): Aircraft hours at the time of the log entry.
+- `date` (Date): Date of the operation.
+- `operation_type` (String): Type of operation.
+- `work_order` (String): Associated work order.
+- `description` (String): Description of the operation.
+- `operator_responsible` (String): Name or ID of the operator representative.
+- `other_data` (String): Additional data.
+
+---
+
+## 4. Compliance & Certification Entities
+
+### `certificate`
+Represents a pilot's certificate.
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `grade` (String): Certificate grade (e.g., "Private", "Commercial").
+- `number` (String): Certificate number.
+- `date_issue` (Date): Date of issue.
+
+### `rating`
+Represents a rating on a pilot's certificate.
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `category_class_or_type` (String): The specific rating (e.g., "AMEL", "B737").
+- `date_issue` (Date): Date of issue.
+
+### `medical_flight_proficiency`
+Tracks a pilot's medical and proficiency status.
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `pilot_id` (FK, String): Foreign key to the `pilot` table.
+- `medical_certificate_date` (Date): Date of medical certificate issuance.
+- `medical_certificate_class` (String): Class of medical certificate.
+- `flight_review_date` (Date): Date of last flight review.
+- `instrument_proficiency_date` (Date): Date of last instrument proficiency check.
+
+### `stc_alterations`
+Represents a Supplemental Type Certificate or major alteration.
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `stc_number` (String): The STC number.
+- `mfg` (String): Manufacturer associated with the STC.
+- `model` (String): Model associated with the STC.
+- `serial_number` (String): Serial number of the altered part.
+- `install_date` (Date): Date of installation.
+- `location` (String): Location of the alteration.
+
+### `directives_bulletines`
+Represents Airworthiness Directives (ADs) and Service Bulletins (SBs).
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `type` (String): "AD" or "SB".
+- `number` (String): The AD/SB number.
+- `hours` (Float): Compliance hours.
+- `description` (String): Description of the directive.
+- `action` (String): Required action.
+- `compliance_date` (Date): Date of compliance.
+- `compliance_data` (String): Details of compliance.
+- `made_by` (String): Who performed the compliance.
+
+### `aircraft_hours_mentries`
+Represents a log of aircraft hours at specific maintenance events.
+
+**Columns:**
+- `id` (PK, String): Unique identifier.
+- `aircraft_id` (FK, String): Foreign key to the `aircraft` table.
+- `hours` (Float): Total airframe hours at the time of entry.
+- `date` (Date): Date of the entry.
+
 

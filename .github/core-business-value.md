@@ -72,6 +72,200 @@ The `Aircraft` entity maintains many-to-many relationships with several other ke
 
 -   **`Aircraft` <> `Owners`**: An aircraft can have multiple co-owners, and an individual or entity can own multiple aircraft.
 
--   **`Aircraft` <> `Directives/Bulletins`**: A single airworthiness directive or service bulletin can apply to many aircraft, and a single aircraft may be subject to numerous directives and bulletins.
+-   **`Aircraft` <> `Directives/Bulletins`**: A single airworthiness directive or service bulletin can be applied to many aircraft, and a single aircraft may be subject to numerous directives and bulletins.
 
 -   **`Aircraft` <> `STC/Alterations`**: A Supplemental Type Certificate (STC) or alteration can be applied to many aircraft, and one aircraft can have multiple STCs or alterations applied to it.
+
+---
+
+## 6. Detailed Entity Properties
+
+This section provides a detailed breakdown of each entity's properties using the Database Markup Language (DBML).
+
+```dbml
+// FAA Compliance Logs Data Model
+
+title "FAA Compliance Logs Data Model"
+
+// define tables
+Table aircraft [icon: airplay, color: blue]{
+  id string [pk]
+  type string
+  registration_number string
+  model string
+  serial string
+  manufacturer string
+  date_of_manufacture date
+  category int
+  hours float
+}
+
+Table engine [icon: cpu, color: orange]{
+  id string [pk]
+  serial_number string
+  type string
+  manufacturer string
+  model string
+  serial string
+  date_mfg date
+  location string
+  hours_since_overhaul int
+}
+
+Table propeller [icon: wind, color: green]{
+  id string [pk]
+  serial_number string
+  type string
+  manufacturer string
+  model string
+  date_mfg string
+  location string
+  hours_since_overhaul int
+  hub_model string
+  hub_serial string
+  blade_model string
+  blade_serial string
+}
+
+Table compoonent_parts [icon: radio, color: purple]{
+  id string [pk]
+  ecomponent string
+  part_name string
+  mfg string
+  model string
+  serial string
+  qty int
+  location string
+  install_date date
+  exp_date date
+  time_limit string
+}
+
+Table operator [icon: user-check, color: yellow]{
+  id string [pk]
+  name string
+  certificate_number string
+  contact_info string
+}
+
+Table pilot [icon: user, color: red]{
+  id string [pk]
+  name string
+  license_number string
+  ratings string
+  medical_certificate_expiry date
+}
+Table pilot_log [icon: book-open, color: lightblue] {
+  
+  id string [pk]
+  date date
+  total_flight_time decimal
+  departure_location string
+  arrival_location string
+  simulator_location string
+  aircraft_id string
+  aircraft_type string
+  safety_pilot_name string
+  solo_time decimal
+  pic_time decimal
+  sic_time decimal
+  training_time decimal
+  day_time decimal
+  night_time decimal
+  actual_instrument_time decimal
+  simulated_instrument_time decimal
+  nvg_time decimal
+  instructor_endorsement_description string
+  instructor_signature string
+  instructor_certificate_number string
+  instructor_certificate_expiry date
+  instrument_approach_location string
+  instrument_approach_type string
+  route_of_flight string
+  takeoffs_day int
+  takeoffs_night int
+  landings_day int
+  landings_night int
+  cross_country_time decimal
+  complex_time decimal
+  high_performance_time decimal
+  tailwheel_time decimal
+  notes string
+  pilot_id string
+}
+Table certificate [icon: award, color: gold] {
+  
+  id string [pk]
+  grade string
+  number string
+  date_issue date
+}
+Table rating [icon: star, color: pink] {
+  
+  id string [pk]
+  category_class_or_type string
+  date_issue date
+}
+Table medical_flight_proficiency [icon: activity, color: teal] {
+  
+  id string [pk]
+  pilot_id string
+  medical_certificate_date date
+  medical_certificate_class string
+  flight_review_date date
+  instrument_proficiency_date date
+}
+Table aircraft_hours_mentries [icon: clock, color: gray] {
+  
+  id string [pk]
+  hours float
+  date date
+  aircraft_id string
+}
+Table stc_alterations [icon: tool, color: brown] {
+  
+  id string [pk]
+  stc_number string
+  mfg string
+  model string
+  serial_number string
+  install_date date
+  location string
+}
+Table directives_bulletines [icon: alert-triangle, color: magenta] {
+  
+  id string [pk]
+  type string
+  number date
+  hours float
+  description string
+  action string
+  compliance_date date
+  compliance_data string
+  made_by string
+}
+Table hardware_log [icon: settings, color: gray] {
+  
+  id string [pk]
+  log_type string
+  flight_hours float
+  date date
+  work_type string
+  work_order string
+  description string
+  mechanic_responsible string
+  component string
+}
+Table operator_log [icon: file, color: yellow] {
+  
+  id string [pk]
+  flight_hours float
+  date date
+  operation_type string
+  work_order string
+  description string
+  operator_responsible string
+  other_data string
+}
+```
+

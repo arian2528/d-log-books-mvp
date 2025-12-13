@@ -10,6 +10,8 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
 
 ### Frontend (Next.js)
 
+-   **UI/UX Guidelines**: Before creating any components, developers must consult the [UI Preferences & Design System](./ui-preferences.md) document. All components should adhere to the specified colors, typography, spacing, and interaction patterns to ensure a consistent user experience.
+
 -   **UI Components to be Built**:
     -   `LogEntryForm.tsx`: A form for creating new log entries (e.g., flight logs, maintenance logs). It will include fields for flight hours, cycles, etc.
     -   `SignLogEntryButton.tsx`: A button that triggers the signing action. This component will handle the API call and display loading/success/error states. It should use an optimistic UI update pattern.
@@ -47,6 +49,8 @@ This feature ensures that when a log entry is signed (e.g., by a Pilot or Mechan
 This feature allows maintenance discrepancies ("squawks") to be managed independently of the aircraft and transferred between aircraft.
 
 ### Frontend (Next.js)
+
+-   **UI/UX Guidelines**: Before creating any components, developers must consult the [UI Preferences & Design System](./ui-preferences.md) document. All components should adhere to the specified colors, typography, spacing, and interaction patterns to ensure a consistent user experience.
 
 -   **UI Components to be Built**:
     -   `SquawkList.tsx`: A component that lists all open squawks for a given aircraft.
