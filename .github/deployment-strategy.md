@@ -12,7 +12,49 @@ This document outlines the recommended deployment strategies for both the initia
 
 ---
 
-## 2. MVP Phase Deployment Strategy
+## 2. Environment & CI/CD Strategy
+
+To ensure a stable and predictable release process, the project will use a multi-environment workflow powered by a Git branching strategy and automated CI/CD pipelines.
+
+### A. Environment Definitions
+
+-   **Development (Local)**: This is the developer's local machine, running the entire stack via `docker-compose`. It's used for day-to-day feature development and unit testing.
+-   **Staging**: A production-like environment that is automatically updated when code is merged into the `staging` branch. It is used for end-to-end testing, QA, and stakeholder previews before a production release. It should have its own dedicated database and resources.
+-   **Production**: The live environment used by end-users. It is only updated when code from the `staging` branch is merged into the `main` branch.
+
+### B. Git Branching Strategy
+
+-   **Feature Branches**: All new work (features, bug fixes) must be done on a feature branch (e.g., `feat/add-squawk-form`, `fix/login-bug`).
+-   **`staging` Branch**: When a feature is complete, its branch is merged into `staging` via a Pull Request. This triggers a deployment to the Staging environment.
+-   **`main` Branch**: After features have been verified in the Staging environment, the `staging` branch is merged into the `main` branch. This triggers the deployment to the Production environment.
+
+### C. CI/CD Pipeline (GitHub Actions)
+
+A file like `ci-cd.yml` will manage the workflow:
+
+1.  **On Pull Request (to `staging` or `main`)**:
+    -   **Lint & Test**: Run linting checks and all unit, integration, and contract tests across the monorepo.
+    -   **SonarQube Analysis**: Perform static code analysis and check the Quality Gate.
+    -   **Build**: Build Docker images for all backend services to ensure they compile correctly.
+
+2.  **On Merge to `staging` Branch**:
+    -   **Build & Push Images**: Build and tag Docker images with a `staging` tag and push them to the container registry (e.g., Google Artifact Registry).
+    -   **Deploy to Staging**: Trigger a deployment of the new images to the Staging environment on Google Cloud Run and Vercel.
+    -   **Run Migrations**: Automatically run any new database migrations against the Staging database.
+
+3.  **On Merge to `main` Branch**:
+    -   **Build & Push Images**: Re-tag the existing `staging` images with a `latest` or version tag (e.g., `v1.2.3`) and push them to the container registry.
+    -   **Deploy to Production**: Trigger a deployment of the newly tagged images to the Production environment on Google Cloud Run and Vercel.
+    -   **Run Migrations**: Automatically run any new database migrations against the Production database.
+
+### D. Configuration & Secrets Management
+
+-   **Environment Variables**: Each environment (Staging, Production) will have its own set of environment variables.
+-   **Secrets**: Sensitive information (API keys, database URLs, JWT secrets) will be stored securely in **Google Secret Manager**. The CI/CD pipeline will have permissions to fetch these secrets and inject them into the appropriate Cloud Run and Vercel environments during deployment. **Never store secrets directly in GitHub.**
+
+---
+
+## 3. MVP Phase Deployment Strategy
 
 For the MVP, the primary goal is **speed of deployment, ease of management, and low operational overhead**. We recommend a combination of platforms that are optimized for specific parts of our stack and offer generous free/low-cost tiers.
 
