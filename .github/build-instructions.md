@@ -134,17 +134,67 @@ This document provides a granular, step-by-step guide to build and set up the in
 6.  **Test:** Write a unit test for the "translation" middleware to ensure it correctly validates a session and attaches a valid JWT.
 
 ### Step 3.2: NestJS API Setup (Stateless Leg)
-1.  **Action:** In `apps/api`, install NestJS JWT and Passport packages, along with a logging library like `pino`.
+1.  **Action:** In `apps/api`, install NestJS JWT, Passport, Swagger, and logging packages.
     ```bash
-    pnpm --filter api add @nestjs/passport @nestjs/jwt passport passport-jwt pino-http pino-pretty
+    pnpm --filter api add @nestjs/passport @nestjs/jwt passport passport-jwt @nestjs/swagger pino-http pino-pretty
     pnpm --filter api add -D @types/passport-jwt
     ```
-2.  **Action:** Configure the `AuthModule` to use the `JwtStrategy` from `passport-jwt`. The strategy should be configured to validate the `Bearer` token using the same secret as the Hono proxy.
-3.  **Action:** In `main.ts`, configure `pino-http` as the logger to enforce structured JSON logging.
-4.  **Action:** Create a `JwtAuthGuard` that can be used to protect routes. This guard will automatically validate the incoming JWT and attach the payload (containing `userId` and `role`) to the request object.
-5.  **Action:** Create a `users` module with a `/users/me` endpoint protected by the `JwtAuthGuard`. This endpoint should return the current user's data based on the `userId` from the JWT payload.
-6.  **Test:** Write a **unit test** for the `/users/me` endpoint, mocking the `Authorization` header with a valid JWT.
-7.  **Test:** Write an **integration test** for the `JwtAuthGuard` to ensure it properly protects routes and validates tokens.
+2.  **Action:** In `apps/api/src/main.ts`, enable API versioning and set up Swagger documentation.
+    **File Content (`main.ts`):**
+    ```typescript
+    import { NestFactory } from '@nestjs/core';
+    import { AppModule } from './app.module';
+    import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+    import { VersioningType } from '@nestjs/common';
+    import { Logger } from 'nestjs-pino';
+
+    async function bootstrap() {
+      const app = await NestFactory.create(AppModule, { bufferLogs: true });
+      
+      // Use Pino for structured logging
+      app.useLogger(app.get(Logger));
+
+      // Enable URI-based API versioning
+      app.enableVersioning({
+        type: VersioningType.URI,
+        defaultVersion: '1',
+      });
+
+      // Configure Swagger/OpenAPI
+      const config = new DocumentBuilder()
+        .setTitle('Aviation Logbook API')
+        .setDescription('The official API documentation for the aviation logbook application.')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build();
+      const document = SwaggerModule.createDocument(app, config);
+      SwaggerModule.setup('api-docs', app, document);
+
+      await app.listen(3000);
+    }
+    bootstrap();
+    ```
+3.  **Action:** Configure the `AuthModule` to use the `JwtStrategy` from `passport-jwt`. The strategy should be configured to validate the `Bearer` token using the same secret as the Hono proxy.
+4.  **Action:** In `main.ts`, configure `pino-http` as the logger to enforce structured JSON logging.
+5.  **Action:** Create a `JwtAuthGuard` that can be used to protect routes. This guard will automatically validate the incoming JWT and attach the payload (containing `userId` and `role`) to the request object.
+6.  **Action:** Create a `users` module with a `/users/me` endpoint protected by the `JwtAuthGuard`. Apply a version to its controller.
+    **Example Controller:**
+    ```typescript
+    @Controller({
+      version: '1',
+      path: 'users',
+    })
+    export class UsersController {
+      // ...
+      @Get('me')
+      @UseGuards(JwtAuthGuard)
+      getProfile(@Request() req) {
+        return req.user;
+      }
+    }
+    ```
+7.  **Test:** Write a **unit test** for the `/users/me` endpoint, mocking the `Authorization` header with a valid JWT.
+8.  **Test:** Write an **integration test** for the `JwtAuthGuard` to ensure it properly protects routes and validates tokens.
 
 ---
 
