@@ -101,3 +101,87 @@ This feature allows maintenance discrepancies ("squawks") to be managed independ
 -   **Database Schema**:
     -   The `squawks` table must have a foreign key `aircraft_id` that links it to the `aircrafts` table.
     -   A `squawk_history` table should be created to log all status changes and transfers.
+
+---
+
+## 3. Data Isolation & Row-Level Security (RLS) Implementation
+
+This feature implements PostgreSQL Row-Level Security (RLS) to enforce strict data isolation rules. The security model controls both who can sign logs (actions) and who can view log data (visibility).
+
+### Backend (NestJS + PostgreSQL)
+
+-   **Database Schema Updates**:
+    -   Add new core entities:
+        -   `mechanic` table with fields: `id`, `name`, `license_number`, `certificate_type`, `certificate_expiry`.
+        -   `owner` table with fields: `id`, `name`, `contact_info`.
+    -   Add junction tables to support many-to-many relationships:
+        -   `aircraft_operators`: Links aircraft to operators with `aircraft_id`, `operator_id`, `assignment_date`, `end_date`. Composite primary key on `(aircraft_id, operator_id)`.
+        -   `aircraft_pilots`: Links aircraft to authorized pilots with `aircraft_id`, `pilot_id`, `authorization_date`, `end_date`. Composite primary key on `(aircraft_id, pilot_id)`.
+        -   `aircraft_owners`: Links aircraft to owners with `aircraft_id`, `owner_id`, `ownership_percentage`, `start_date`, `end_date`. Composite primary key on `(aircraft_id, owner_id)`.
+        -   `aircraft_installed_parts`: Tracks component installation with `aircraft_id`, `component_part_id`, `installation_date`, `removal_date`. Composite primary key on `(aircraft_id, component_part_id)`.
+        -   `aircraft_stc_alterations`: Links STCs to aircraft with `aircraft_id`, `stc_alteration_id`, `application_date`. Composite primary key on `(aircraft_id, stc_alteration_id)`.
+
+-   **RLS Policy Implementation**:
+    -   **Control Over Actions (Signing)**:
+        -   Create RLS policies on `pilot_log`, `hardware_log`, and `operator_log` tables that restrict `UPDATE` and `INSERT` operations.
+        -   Policy Rule: A user can only sign (update the `signed_at` and `signed_by_user_id` fields) a log entry if the `signed_by_user_id` matches their authenticated user ID.
+        -   Example SQL Policy for `pilot_log`:
+          ```sql
+          CREATE POLICY pilot_sign_own_logs ON pilot_log
+            FOR UPDATE
+            USING (signed_by_user_id = current_setting('app.current_user_id')::uuid);
+          ```
+    -   **Control Over Visibility (Reviewing)**:
+        -   Create RLS policies on log tables that grant `SELECT` access based on the user's role and their relationship to the aircraft.
+        -   Policy Rules:
+            -   A `Pilot` can see all log entries they personally signed for any aircraft they have flown.
+            -   An `Operator` can see all log entries for any aircraft in their fleet (via the `aircraft_operators` junction table).
+            -   An `Owner` can see all log entries for any aircraft they own (via the `aircraft_owners` junction table).
+            -   A `Mechanic` can see maintenance-related logs (`hardware_log`) for aircraft they are assigned to work on.
+        -   Example SQL Policy for `pilot_log` (Pilot visibility):
+          ```sql
+          CREATE POLICY pilot_view_own_logs ON pilot_log
+            FOR SELECT
+            USING (pilot_id = current_setting('app.current_user_id')::uuid);
+          ```
+        -   Example SQL Policy for `pilot_log` (Operator/Owner visibility):
+          ```sql
+          CREATE POLICY operator_view_fleet_logs ON pilot_log
+            FOR SELECT
+            USING (
+              aircraft_id IN (
+                SELECT aircraft_id FROM aircraft_operators
+                WHERE operator_id = current_setting('app.current_user_id')::uuid
+                AND (end_date IS NULL OR end_date > NOW())
+              )
+            );
+          ```
+
+-   **Application-Level Context**:
+    -   In the NestJS application, create a middleware or interceptor that sets the PostgreSQL session variable `app.current_user_id` at the start of each request based on the authenticated JWT token.
+    -   Example:
+      ```typescript
+      await this.dataSource.query(
+        `SET LOCAL app.current_user_id = $1`,
+        [user.id]
+      );
+      ```
+
+-   **TypeORM Entity Updates**:
+    -   Update the `Aircraft` entity to include relationships to the new junction tables:
+        -   `@ManyToMany(() => Operator, { through: () => AircraftOperators })`
+        -   `@ManyToMany(() => Pilot, { through: () => AircraftPilots })`
+        -   `@ManyToMany(() => Owner, { through: () => AircraftOwners })`
+        -   `@ManyToMany(() => ComponentPart, { through: () => AircraftInstalledParts })`
+        -   `@ManyToMany(() => StcAlteration, { through: () => AircraftStcAlterations })`
+    -   Create new TypeORM entities for `Mechanic`, `Owner`, and all junction tables.
+
+-   **Testing**:
+    -   **Unit Tests**: Write unit tests for the RLS policy logic by mocking different user roles and verifying that the correct session variables are set.
+    -   **Integration Tests**: Write integration tests that authenticate as different user types (Pilot, Operator, Owner, Mechanic) and verify:
+        -   A user cannot sign a log entry that doesn't belong to them (should return a 403 Forbidden).
+        -   A user can only see log entries they are authorized to view based on their role and aircraft associations.
+    -   **E2E Tests**: Create end-to-end tests that simulate realistic scenarios:
+        -   A Pilot signs their own log and verifies the signature is recorded.
+        -   An Operator views all logs for their fleet.
+        -   A Mechanic attempts to view a pilot log for an aircraft they are not assigned to and is denied access.
